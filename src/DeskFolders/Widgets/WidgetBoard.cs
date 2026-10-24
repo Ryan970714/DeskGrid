@@ -6,6 +6,9 @@ using DeskFolders.Icons;
 
 namespace DeskFolders.Widgets;
 
+/// <param name="Bounds">The widget's cell on screen, in physical pixels.</param>
+internal sealed record WidgetClickedEventArgs(WidgetFolder Folder, ScreenRect Bounds);
+
 /// <summary>
 /// Shows one <see cref="FolderWidget"/> per widget folder on the desktop and keeps them in step with
 /// the catalog. Every widget sits on its own <see cref="WidgetGrid"/> cell; positions are saved.
@@ -14,7 +17,7 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
 {
     private readonly Dictionary<string, Entry> _entries = new(StringComparer.OrdinalIgnoreCase);
 
-    public event EventHandler<WidgetFolder>? WidgetClicked;
+    public event EventHandler<WidgetClickedEventArgs>? WidgetClicked;
 
     public void Show(IReadOnlyList<WidgetFolder> folders)
     {
@@ -81,6 +84,14 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
         }
     }
 
+    private static ScreenRect BoundsOf(Entry entry)
+    {
+        var position = entry.Surface.Position;
+        var monitor = MonitorArea.At(position);
+        return new ScreenRect(position.X, position.Y,
+            position.X + monitor.ToPixels(FolderWidget.CellWidth), position.Y + monitor.ToPixels(FolderWidget.CellHeight));
+    }
+
     private HashSet<ScreenPoint> TakenCells(Entry? except) =>
         _entries.Values.Where(e => e != except).Select(e => e.Surface.Position).ToHashSet();
 
@@ -109,7 +120,7 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
             View = new FolderWidget();
             Surface = new DesktopSurface(View, position);
 
-            View.Clicked += (_, _) => board.WidgetClicked?.Invoke(board, Folder);
+            View.Clicked += (_, _) => board.WidgetClicked?.Invoke(board, new WidgetClickedEventArgs(Folder, BoundsOf(this)));
             View.DragStarted += (_, _) => _dragOrigin = Surface.Position;
             View.Dragged += (_, offset) => Surface.MoveTo(_dragOrigin.Offset(offset.X, offset.Y));
             View.DragCompleted += (_, _) => board.Drop(this);

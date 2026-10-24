@@ -5,6 +5,7 @@ using DeskFolders.Desktop;
 using DeskFolders.Diagnostics;
 using DeskFolders.Folders;
 using DeskFolders.Icons;
+using DeskFolders.Panel;
 using DeskFolders.Resources;
 using DeskFolders.Widgets;
 
@@ -15,6 +16,7 @@ public partial class App : Application
     private DesktopHost? _desktopHost;
     private IconService? _icons;
     private WidgetBoard? _board;
+    private PanelController? _panels;
     private WidgetCatalog? _catalog;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -29,20 +31,23 @@ public partial class App : Application
         _desktopHost = new DesktopHost();
         _desktopHost.Start();
         _icons = new IconService();
+        _panels = new PanelController(configStore, _icons);
         _board = new WidgetBoard(_desktopHost, configStore, _icons);
-        _board.WidgetClicked += (_, folder) => Log.Info($"Widget \"{folder.Name}\" clicked.");
+        _board.WidgetClicked += (_, click) => _panels.Toggle(click.Folder, click.Bounds);
 
         _catalog = new WidgetCatalog(configStore);
         _catalog.Changed += (_, _) =>
         {
             _icons.Retain(_catalog.Widgets);
             _board.Show(_catalog.Widgets);
+            _panels.Refresh(_catalog.Widgets);
         };
         _catalog.Start();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _panels?.Close();
         _catalog?.Dispose();
         _board?.Dispose();
         _icons?.Dispose();

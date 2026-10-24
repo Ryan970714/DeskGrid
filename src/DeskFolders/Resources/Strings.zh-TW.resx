@@ -15,6 +15,9 @@
   <data name="MenuExit" xml:space="preserve">
     <value>結束 DeskFolders</value>
   </data>
+  <data name="PanelEmpty" xml:space="preserve">
+    <value>這個資料夾是空的。</value>
+  </data>
   <data name="RootFolderRejected" xml:space="preserve">
     <value>無法使用根目錄「{0}」：{1}
 

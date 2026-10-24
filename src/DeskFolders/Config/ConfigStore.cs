@@ -13,7 +13,7 @@ internal sealed class ConfigStore
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true,
         RespectNullableAnnotations = true,
-        Converters = { new JsonStringEnumConverter<DropMode>(JsonNamingPolicy.CamelCase) },
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
     };
 
     private ConfigStore(string filePath, AppConfig config)

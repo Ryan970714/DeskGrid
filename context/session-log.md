@@ -4,6 +4,16 @@
 
 ---
 
+**2026-10-25（階段 5）**
+**Goal**: PopupPanel（格子、啟動、收合）。
+**Completed**: Panel/（PopupPanel、PanelController、PanelPlacement、PanelTheme、Backdrop、ShellItem、PanelItem）、config `panelBackground`；48 測試通過；Acrylic 與 layered 實機全流程通過。
+**Modified**: App.xaml.cs、AppConfig、ConfigStore（泛用 enum converter）、DesktopSurface（MA_NOACTIVATE）、WidgetBoard（點擊帶邊界）、Strings（PanelEmpty）。
+**Decisions**: 面板旁、48 DIP、標題、可自訂背景（使用者）；Acrylic 視窗做法、MA_NOACTIVATE、Process.Start（見 decisions.md）。
+**Next Session**: 使用者驗證後開始階段 6，先確認設定視窗、拖放、開機自啟。
+**Issues**: 測試中 widget 被拖動導致一輪結果作廢；面板開著時拖 widget 不會關面板。
+
+---
+
 **2026-10-24（階段 4）**
 **Goal**: FolderWidget（顯示、拖動、存位置）。
 **Completed**: Widgets/（FolderWidget、WidgetBoard、WidgetGrid）、MonitorArea、DesktopHost Add/Remove、DesktopSurface.MoveTo；移除 Spike；36 測試通過；實機擺放、拖曳吸附、點擊、重開、右鍵選單皆通過。

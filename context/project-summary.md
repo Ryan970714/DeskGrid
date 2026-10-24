@@ -30,6 +30,7 @@ src/DeskFolders/
   Diagnostics/            Log
   Folders/                FolderScanner, WidgetCatalog, RootFolder, NaturalStringComparer, records
   Icons/                  IconService, ShellImage, PreviewComposer
+  Panel/                  PopupPanel (XAML), PanelController, PanelPlacement, PanelTheme, Backdrop, ShellItem, PanelItem
   Resources/              Strings.resx (en), Strings.zh-TW.resx
   Threading/              DispatcherThread (STA worker)
   Widgets/                FolderWidget (XAML), WidgetBoard, WidgetGrid
@@ -38,16 +39,16 @@ context/                  session context docs
 ```
 
 ## Core Modules
-DesktopHost（`Desktop/`）、ConfigStore（`Config/`）、FolderScanner + WidgetCatalog（`Folders/`）、IconService（`Icons/`）、FolderWidget + WidgetBoard（`Widgets/`）。其餘模組見 `CLAUDE.md`「架構」。
+DesktopHost（`Desktop/`）、ConfigStore（`Config/`）、FolderScanner + WidgetCatalog（`Folders/`）、IconService（`Icons/`）、FolderWidget + WidgetBoard（`Widgets/`）、PopupPanel + PanelController（`Panel/`）。其餘模組見 `CLAUDE.md`「架構」。
 
 ## Coding Rules
 見 `AGENTS.md`.
 
 ## Current Milestone
-階段 4：FolderWidget（顯示、拖動、存位置）。
+階段 5：PopupPanel（格子、啟動、收合）。
 
 ## Current Status
-階段 1–3 使用者驗證通過。階段 4 完成，36 個測試通過，本機實機驗證（擺放、拖曳吸附、點擊、重開保留位置、右鍵選單）通過，待使用者手動驗證。
+階段 1–4 使用者驗證通過。階段 5 完成，48 個測試通過，本機實機驗證（Acrylic 與 layered 兩種背景：開啟、Esc、點外部、切換、啟動）通過，待使用者手動驗證。
 
 ## Known Issues
 - 舊版桌面階層（Win10 / Win11 ≤ 23H2）程式路徑尚未實機測試。
@@ -65,7 +66,11 @@ DesktopHost（`Desktop/`）、ConfigStore（`Config/`）、FolderScanner + Widge
 - 執行中改解析度、DPI、工作列位置時 widget 不會重新吸附，重啟 app 才夾回工作區。
 - 多螢幕：格子大小依各螢幕 DPI 算，但 widget 實際以 Progman 的 DPI 渲染，不同 DPI 的副螢幕上可能錯位。
 - 拖曳中無法用 Esc 取消；放到已佔用的格子會被放到次近的空格。
-- 暫時性：widget 右鍵選單只有「結束」（階段 6 移除）；點擊只寫 log（階段 5 開面板）。
+- 暫時性：widget 右鍵選單只有「結束」（階段 6 移除）。
+- 面板開著時拖曳另一個 widget，面板不會自動關閉。
+- 面板背景只在開啟時讀取設定與系統深淺色；目前改設定要手改 config 並重啟 app（階段 6 設定 UI）。
+- Win10 上「system」背景走不透明系統色路徑，未在 Win10 實機看過。
+- 面板內只支援 Tab / Enter 鍵盤操作，沒有方向鍵。
 
 ## Future Plan
 依 `CLAUDE.md`「開發階段與進度」3 → 7。

@@ -156,3 +156,48 @@
 **Author**: Claude
 
 ---
+
+### 2026-10-24 — 面板位置、大小、標題、可自訂背景
+**Decision**: 面板開在 widget 旁；項目 48 DIP；顯示資料夾名稱標題；背景可自訂：三種預設（system 毛玻璃跟隨系統〔預設〕/ dark / light）+ custom（顏色 + 不透明度）；config 新增 `panelBackground`（超出原規格 5 項）；設定 UI 放階段 6。
+**Reason**: 使用者選定與同意。
+**Alternatives**: 螢幕中央；64 DIP；無標題；固定單一背景。
+**Consequences**: 階段 6 設定視窗需包含背景選擇與顏色/不透明度。
+**Author**: 使用者決定
+
+---
+
+### 2026-10-24 — 面板行為預設
+**Decision**: 最多顯示 4 列後捲動；點項目啟動後收合；再點同一 widget 關閉、點另一 widget 直接切換；同時一個面板；項目名稱用 Shell 顯示名稱；空資料夾顯示提示文字。
+**Reason**: 慣例（手機資料夾 / 系統彈出選單）；Shell 顯示名稱與檔案總管一致。
+**Alternatives**: 依螢幕高度決定列數；啟動後保持開啟；檔名直接顯示。
+**Consequences**: 無。
+**Author**: Claude（已於階段回報告知）
+
+---
+
+### 2026-10-25 — Acrylic 面板的視窗做法
+**Decision**: Acrylic 樣式用 `SingleBorderWindow` + `WindowChrome(GlassFrameThickness=-1, CaptionHeight=0)`，拿掉 `WS_SYSMENU`，自己 Measure 內容設定 Width/Height（不用 SizeToContent）；其他樣式用 layered 視窗。
+**Reason**: 實測無邊框 `WS_POPUP` 拿不到 system backdrop；有 `WS_SYSMENU` 時 DWM 會在延伸框架畫關閉鈕；SizeToContent 會多算已被移除的外框，視窗過大且超出螢幕。
+**Alternatives**: 自己模擬模糊（layered 無法取樣背後內容）；只提供純色。
+**Consequences**: Acrylic 與 layered 必須在建立視窗前決定，因此每次開面板都建新視窗（也順便讀到最新設定）。
+**Author**: Claude
+
+---
+
+### 2026-10-25 — 桌面 surface 不啟用桌面（MA_NOACTIVATE）
+**Decision**: `DesktopSurface` 處理 `WM_MOUSEACTIVATE` 回 `MA_NOACTIVATE`。
+**Reason**: 實測面板開著時點 widget，啟用 Explorer 桌面的那次點擊被 Explorer 吞掉，widget 收不到按下（點另一個 widget 要點兩次）。不啟用桌面後，面板的開關完全由 `PanelController` 決定，不再需要「關閉後 500ms 不重開」的防護。
+**Alternatives**: 保留桌面啟用 + 計時防護 + 重新捕捉滑鼠（試過，按下根本沒送達，無效）。
+**Consequences**: 點 widget 不會讓桌面成為前景視窗；面板開著時拖曳 widget 不會關閉面板。
+**Author**: Claude
+
+---
+
+### 2026-10-25 — 啟動項目用 Process.Start(UseShellExecute)
+**Decision**: 以 `Process.Start` + `UseShellExecute=true`（內部即 ShellExecuteEx）啟動；工作目錄 = 項目所在資料夾；`ErrorDialog=true`。
+**Reason**: 符合「一律用 ShellExecute」，比手寫 SHELLEXECUTEINFO 簡潔；行為與檔案總管雙擊一致；錯誤由 Windows 自己顯示。
+**Alternatives**: CsWin32 直接呼叫 `ShellExecuteEx`。
+**Consequences**: 失敗（含 UAC 取消）只記 log。
+**Author**: Claude
+
+---

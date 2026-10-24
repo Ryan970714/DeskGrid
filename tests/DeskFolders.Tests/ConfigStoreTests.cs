@@ -20,6 +20,7 @@ public sealed class ConfigStoreTests : IDisposable
         Assert.Equal(AppConfig.DefaultRootPath, config.RootPath);
         Assert.Equal(AppConfig.DefaultPanelColumns, config.PanelColumns);
         Assert.Equal(DropMode.Move, config.DropMode);
+        Assert.Equal(PanelBackgroundStyle.System, config.PanelBackground.Style);
         Assert.Empty(config.Widgets);
     }
 
@@ -30,6 +31,7 @@ public sealed class ConfigStoreTests : IDisposable
         store.Config.RootPath = @"D:\Folders";
         store.Config.PanelColumns = 4;
         store.Config.DropMode = DropMode.Copy;
+        store.Config.PanelBackground = new PanelBackground { Style = PanelBackgroundStyle.Custom, CustomColor = "#112233", CustomOpacity = 0.5 };
         store.Config.Widgets["Games"] = new WidgetConfig { Position = new ScreenPoint(10, 20), ItemOrder = ["b.lnk", "a.lnk"] };
         store.Save();
 
@@ -38,6 +40,8 @@ public sealed class ConfigStoreTests : IDisposable
         Assert.Equal(@"D:\Folders", reloaded.RootPath);
         Assert.Equal(4, reloaded.PanelColumns);
         Assert.Equal(DropMode.Copy, reloaded.DropMode);
+        Assert.Equal((PanelBackgroundStyle.Custom, "#112233", 0.5),
+            (reloaded.PanelBackground.Style, reloaded.PanelBackground.CustomColor, reloaded.PanelBackground.CustomOpacity));
         Assert.Equal(new ScreenPoint(10, 20), reloaded.Widgets["GAMES"].Position);
         Assert.Equal(["b.lnk", "a.lnk"], reloaded.Widgets["Games"].ItemOrder);
     }

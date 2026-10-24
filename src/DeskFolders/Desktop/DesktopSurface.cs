@@ -46,6 +46,7 @@ internal sealed class DesktopSurface(UIElement content, ScreenPoint position) : 
         };
         _source = new HwndSource(parameters) { SizeToContent = SizeToContent.WidthAndHeight, RootVisual = content };
         _source.Disposed += OnSourceDisposed;
+        _source.AddHook(KeepDesktopInactive);
 
         // Above the icon list view, so clicks land on us rather than on the icons.
         PInvoke.SetWindowPos(new HWND(_source.Handle), HwndTop, 0, 0, 0, 0,
@@ -67,6 +68,19 @@ internal sealed class DesktopSurface(UIElement content, ScreenPoint position) : 
     }
 
     public void Dispose() => Release();
+
+    // Clicking a surface must not activate the desktop: Explorer swallows the click that activates it,
+    // so with one of our windows active (e.g. a panel) the surface would never see the press.
+    private static nint KeepDesktopInactive(nint window, int message, nint wParam, nint lParam, ref bool handled)
+    {
+        if (message != (int)PInvoke.WM_MOUSEACTIVATE)
+        {
+            return 0;
+        }
+
+        handled = true;
+        return (nint)PInvoke.MA_NOACTIVATE;
+    }
 
     private static System.Drawing.Point ToClient(HWND parent, ScreenPoint position)
     {
