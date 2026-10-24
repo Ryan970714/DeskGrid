@@ -6,15 +6,16 @@ using DeskFolders.Diagnostics;
 using DeskFolders.Folders;
 using DeskFolders.Icons;
 using DeskFolders.Resources;
-using DeskFolders.Spike;
+using DeskFolders.Widgets;
 
 namespace DeskFolders;
 
 public partial class App : Application
 {
     private DesktopHost? _desktopHost;
-    private WidgetCatalog? _catalog;
     private IconService? _icons;
+    private WidgetBoard? _board;
+    private WidgetCatalog? _catalog;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -25,24 +26,25 @@ public partial class App : Application
         var configStore = ConfigStore.Open(ConfigStore.DefaultFilePath);
         EnsureUsableRootFolder(configStore);
 
-        var tile = new SpikeTile();
+        _desktopHost = new DesktopHost();
+        _desktopHost.Start();
         _icons = new IconService();
+        _board = new WidgetBoard(_desktopHost, configStore, _icons);
+        _board.WidgetClicked += (_, folder) => Log.Info($"Widget \"{folder.Name}\" clicked.");
+
         _catalog = new WidgetCatalog(configStore);
         _catalog.Changed += (_, _) =>
         {
             _icons.Retain(_catalog.Widgets);
-            tile.ShowWidgets(_catalog.Widgets, _icons);
+            _board.Show(_catalog.Widgets);
         };
-
-        _desktopHost = new DesktopHost();
-        _desktopHost.Add(new DesktopSurface(tile, SpikeTile.CenterOfPrimaryScreen()));
-        _desktopHost.Start();
         _catalog.Start();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
         _catalog?.Dispose();
+        _board?.Dispose();
         _icons?.Dispose();
         _desktopHost?.Dispose();
         Log.Info("DeskFolders exited.");

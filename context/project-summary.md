@@ -26,28 +26,28 @@ src/DeskFolders/
   NativeMethods.txt       CsWin32 API list
   App.xaml(.cs)           entry; ShutdownMode=OnExplicitShutdown
   Config/                 AppConfig, ConfigStore
-  Desktop/                DesktopHost, DesktopSurface, IconLayer, ScreenPoint
+  Desktop/                DesktopHost, DesktopSurface, IconLayer, MonitorArea, ScreenPoint/ScreenRect
   Diagnostics/            Log
   Folders/                FolderScanner, WidgetCatalog, RootFolder, NaturalStringComparer, records
   Icons/                  IconService, ShellImage, PreviewComposer
   Resources/              Strings.resx (en), Strings.zh-TW.resx
   Threading/              DispatcherThread (STA worker)
-  Spike/                  SpikeTile (placeholder, 階段 4 移除)
+  Widgets/                FolderWidget (XAML), WidgetBoard, WidgetGrid
 tests/DeskFolders.Tests/  xUnit v3
 context/                  session context docs
 ```
 
 ## Core Modules
-DesktopHost（`Desktop/`）、ConfigStore（`Config/`）、FolderScanner + WidgetCatalog（`Folders/`）、IconService（`Icons/`）。其餘模組見 `CLAUDE.md`「架構」。
+DesktopHost（`Desktop/`）、ConfigStore（`Config/`）、FolderScanner + WidgetCatalog（`Folders/`）、IconService（`Icons/`）、FolderWidget + WidgetBoard（`Widgets/`）。其餘模組見 `CLAUDE.md`「架構」。
 
 ## Coding Rules
 見 `AGENTS.md`.
 
 ## Current Milestone
-階段 3：IconService + 2×2 預覽合成。
+階段 4：FolderWidget（顯示、拖動、存位置）。
 
 ## Current Status
-階段 1、2 使用者驗證通過。階段 3 完成，28 個測試通過，本機實機驗證通過，待使用者手動驗證。
+階段 1–3 使用者驗證通過。階段 4 完成，36 個測試通過，本機實機驗證（擺放、拖曳吸附、點擊、重開保留位置、右鍵選單）通過，待使用者手動驗證。
 
 ## Known Issues
 - 舊版桌面階層（Win10 / Win11 ≤ 23H2）程式路徑尚未實機測試。
@@ -61,7 +61,11 @@ DesktopHost（`Desktop/`）、ConfigStore（`Config/`）、FolderScanner + Widge
 - 捷徑目標程式更新圖示但 .lnk 本身沒變時，快取的舊圖示要到重啟 app 才更新。
 - 圖示快取只在記憶體，每次啟動重新向 Shell 取（每個項目一次）。
 - 只有小尺寸圖示的程式在 256px 時由 Shell 放大，可能偏糊（本機樣本都有 256px 圖示）。
-- Spike 文字未進資源檔（暫時性 placeholder）。
+- widget 不會避開原生桌面圖示（右側若有原生圖示會疊在一起），需使用者自己拖開。
+- 執行中改解析度、DPI、工作列位置時 widget 不會重新吸附，重啟 app 才夾回工作區。
+- 多螢幕：格子大小依各螢幕 DPI 算，但 widget 實際以 Progman 的 DPI 渲染，不同 DPI 的副螢幕上可能錯位。
+- 拖曳中無法用 Esc 取消；放到已佔用的格子會被放到次近的空格。
+- 暫時性：widget 右鍵選單只有「結束」（階段 6 移除）；點擊只寫 log（階段 5 開面板）。
 
 ## Future Plan
 依 `CLAUDE.md`「開發階段與進度」3 → 7。

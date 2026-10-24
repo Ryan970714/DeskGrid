@@ -1,11 +1,15 @@
 ChangeWindowMessageFilterEx
 DIBSECTION
 GetObject
+IsWindow
 IShellItemImageFactory
+MonitorFromPoint
 SHCreateItemFromParsingName
 SIIGBF
 FindWindowEx
-GetDpiForSystem
+GetCursorPos
+GetDpiForMonitor
+GetMonitorInfo
 GetParent
 GetSystemMetrics
 GetWindowLong

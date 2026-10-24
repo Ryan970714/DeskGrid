@@ -1,0 +1,25 @@
+<UserControl x:Class="DeskFolders.Widgets.FolderWidget"
+             x:ClassModifier="internal"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Highlight covers the whole cell on hover, like a desktop icon's. -->
+  <Border x:Name="Highlight" CornerRadius="4" Padding="2,4">
+    <StackPanel>
+      <Border Width="48" Height="48" CornerRadius="10.7" Padding="5.8" Background="#4DFFFFFF">
+        <Image x:Name="Preview" RenderOptions.BitmapScalingMode="HighQuality" />
+      </Border>
+      <TextBlock x:Name="Label"
+                 Margin="0,4,0,0"
+                 Foreground="White"
+                 TextAlignment="Center"
+                 TextWrapping="Wrap"
+                 TextTrimming="CharacterEllipsis"
+                 FontFamily="{x:Static SystemFonts.IconFontFamily}"
+                 FontSize="{x:Static SystemFonts.IconFontSize}">
+        <TextBlock.Effect>
+          <DropShadowEffect ShadowDepth="1" BlurRadius="3" Opacity="0.8" />
+        </TextBlock.Effect>
+      </TextBlock>
+    </StackPanel>
+  </Border>
+</UserControl>

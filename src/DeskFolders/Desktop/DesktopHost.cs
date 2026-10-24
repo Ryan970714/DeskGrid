@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using DeskFolders.Diagnostics;
@@ -17,13 +18,36 @@ internal sealed class DesktopHost : IDisposable
     private readonly DispatcherTimer _retryTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly uint _taskbarCreatedMessage = PInvoke.RegisterWindowMessage("TaskbarCreated");
     private HwndSource? _shellEventsWindow;
+    private IconLayer? _layer;
 
     public DesktopHost() => _retryTimer.Tick += (_, _) => EnsureAttached();
 
+    /// <summary>Starts managing <paramref name="surface"/>; attaches it right away once started.</summary>
     public void Add(DesktopSurface surface)
     {
         _surfaces.Add(surface);
         surface.Lost += OnSurfaceLost;
+
+        if (_layer is { } layer && PInvoke.IsWindow(layer.Handle))
+        {
+            TryAttach(surface, layer);
+        }
+        else if (_shellEventsWindow is not null)
+        {
+            EnsureAttached();
+        }
+    }
+
+    /// <summary>Stops managing <paramref name="surface"/> and destroys its window.</summary>
+    public void Remove(DesktopSurface surface)
+    {
+        if (!_surfaces.Remove(surface))
+        {
+            return;
+        }
+
+        surface.Lost -= OnSurfaceLost;
+        surface.Dispose();
     }
 
     public void Start()
@@ -59,15 +83,27 @@ internal sealed class DesktopHost : IDisposable
         }
 
         _retryTimer.Stop();
-        var detached = _surfaces.Where(s => !s.IsAttachedTo(layer.Handle)).ToList();
-        foreach (var surface in detached)
+        _layer = layer;
+        var attached = _surfaces.Where(s => !s.IsAttachedTo(layer.Handle)).ToList().Count(s => TryAttach(s, layer));
+        if (attached > 0)
+        {
+            Log.Info($"Attached {attached} surface(s) to SHELLDLL_DefView 0x{(nint)layer.Handle:X} ({layer.Layout} layout).");
+        }
+    }
+
+    private bool TryAttach(DesktopSurface surface, IconLayer layer)
+    {
+        try
         {
             surface.AttachTo(layer.Handle);
+            return true;
         }
-
-        if (detached.Count > 0)
+        catch (Win32Exception exception)
         {
-            Log.Info($"Attached {detached.Count} surface(s) to SHELLDLL_DefView 0x{(nint)layer.Handle:X} ({layer.Layout} layout).");
+            // The layer went away between finding it and creating the window.
+            Log.Error("Attaching a surface failed; retrying", exception);
+            _retryTimer.Start();
+            return false;
         }
     }
 

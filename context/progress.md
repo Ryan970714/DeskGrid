@@ -7,7 +7,13 @@
   - `DesktopSurface`：layered 子視窗 HwndSource，可重建並沿用 WPF content
   - `DesktopHost`：Lost 事件 + 每秒重試 + `TaskbarCreated` 監聽，自動重掛
   - 專案 context 文件（CLAUDE.md、AGENTS.md、context/）
-- 階段 3：IconService + 預覽合成（待驗證）
+- 階段 4：FolderWidget（待驗證）
+  - `FolderWidget`（XAML）：48 DIP 淺色半透明方塊 + 名稱、hover 高亮、點擊/拖曳手勢、暫時性結束選單
+  - `WidgetGrid`：右上角起算的 76×96 DIP 格子、FirstFree / NearestFree
+  - `WidgetBoard`：依 catalog 同步 widget、擺放、拖曳吸附、存位置
+  - `DesktopHost.Add` 立即掛載 / `Remove`；`DesktopSurface.MoveTo`；`MonitorArea`（工作區 + DPI）
+  - 移除 Spike；8 個新測試（共 36）
+- 階段 3：IconService + 預覽合成（使用者驗證通過）
   - `ShellImage`：IShellItemImageFactory（ICONONLY）→ 直通 alpha `Bgra32` frozen bitmap
   - `PreviewComposer`：256² 透明 2×2 預覽，依列填滿
   - `IconService`：STA 背景執行緒、圖示/預覽記憶體快取（Task 快取、前 4 項 key）、`Retain`
@@ -22,18 +28,19 @@
   - `SpikeTile` 顯示掃描結果供手動驗證
 
 ## In Progress
-- 階段 3 使用者驗證
+- 階段 4 使用者驗證
 
 ## Pending
-- 階段 4 ~ 7（見 `CLAUDE.md`「開發階段與進度」）
+- 階段 5 ~ 7（見 `CLAUDE.md`「開發階段與進度」）
 
 ## Completion %
-約 43%（3 / 7 階段）
+約 57%（4 / 7 階段）
 
 ## Milestones
 - 2026-10-24：階段 1 完成並驗證通過
 - 2026-10-24：階段 2 完成並驗證通過
-- 2026-10-24：階段 3 完成（待驗證）
+- 2026-10-24：階段 3 完成並驗證通過
+- 2026-10-24：階段 4 完成（待驗證）
 
 ## Last Update
 2026-10-24

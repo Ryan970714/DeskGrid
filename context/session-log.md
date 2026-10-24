@@ -4,6 +4,16 @@
 
 ---
 
+**2026-10-24（階段 4）**
+**Goal**: FolderWidget（顯示、拖動、存位置）。
+**Completed**: Widgets/（FolderWidget、WidgetBoard、WidgetGrid）、MonitorArea、DesktopHost Add/Remove、DesktopSurface.MoveTo；移除 Spike；36 測試通過；實機擺放、拖曳吸附、點擊、重開、右鍵選單皆通過。
+**Modified**: App.xaml.cs、DesktopHost、DesktopSurface、ScreenPoint、NativeMethods.txt、Strings（MenuExit）。
+**Decisions**: 外觀 A / 48 DIP / 右上角 / 對齊格線（使用者）；76×96 格、最近空格（見 decisions.md）。
+**Next Session**: 使用者驗證後開始階段 5，先確認面板外觀與位置。
+**Issues**: 不避開原生圖示；執行中改解析度不重新吸附。
+
+---
+
 **2026-10-24（階段 3）**
 **Goal**: IconService + 2×2 預覽合成。
 **Completed**: Icons/（ShellImage、PreviewComposer、IconService）、Threading/DispatcherThread；28 個測試通過；實驗確認 256px 與直通 alpha；實機預覽即時更新。

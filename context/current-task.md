@@ -1,22 +1,22 @@
 # Current Task
 
 ## Current Goal
-階段 3：IconService + 2×2 預覽合成。
+階段 4：FolderWidget（顯示、拖動、存位置）。
 
 ## Current Task
-等待使用者手動驗證階段 3。
+等待使用者手動驗證階段 4。
 
 ## Current Status
 實作完成並已 commit。驗證：
-- `dotnet test`：28 個測試通過（新增：預覽版面、Shell 圖示 alpha、快取命中與失效、Retain）
-- 實驗：本機桌面捷徑 256px 皆回傳 256×256；Shell DIB 為直通 alpha → `Bgra32`
-- 實機：`%USERPROFILE%\DeskFolders` 下放了 4 個示範資料夾（Chat / Dev / Empty / Office，內容為桌面捷徑的複本），spike 方塊顯示各自的 2×2 預覽；刪除/新增項目後預覽即時重建
+- `dotnet test`：36 個測試通過（新增 8 個 WidgetGrid 測試）
+- 實機（模擬滑鼠，使用者同意）：4 個 widget 依序排在右上角一欄；Chat 拖到中央後吸附到 (1360,960) 並寫入 config；點擊 Office 有記錄；重開 app 位置保留且 config 未被多寫；右鍵選單顯示「結束 DeskFolders」
+- 未實機測：explorer 重啟時多個 widget 的重掛（DesktopHost 路徑有小改動）、滑鼠移上的高亮
 
 ## Current File
-`src/DeskFolders/Icons/*`
+`src/DeskFolders/Widgets/*`、`src/DeskFolders/Desktop/*`
 
 ## Next Step
-使用者驗證通過後開始階段 4（FolderWidget：顯示、拖動、存位置），開始前確認 widget 外觀與新 widget 預設位置。
+使用者驗證通過後開始階段 5（PopupPanel：格子、啟動、收合）。開始前確認面板外觀、位置（widget 旁邊 / 螢幕中央）、項目大小。
 
 ## Blocking Issues
 無。

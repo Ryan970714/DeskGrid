@@ -18,7 +18,7 @@ internal sealed class DesktopSurface(UIElement content, ScreenPoint position) : 
     private HwndSource? _source;
 
     /// <summary>Top-left corner in physical screen pixels.</summary>
-    public ScreenPoint Position { get; } = position;
+    public ScreenPoint Position { get; private set; } = position;
 
     /// <summary>Raised when someone else destroys the window, typically Explorer exiting.</summary>
     public event EventHandler? Lost;
@@ -31,9 +31,7 @@ internal sealed class DesktopSurface(UIElement content, ScreenPoint position) : 
     {
         Release();
 
-        var origin = new System.Drawing.Point(Position.X, Position.Y);
-        PInvoke.ScreenToClient(layer, ref origin);
-
+        var origin = ToClient(layer, Position);
         var parameters = new HwndSourceParameters(nameof(DesktopSurface))
         {
             ParentWindow = layer,
@@ -54,7 +52,28 @@ internal sealed class DesktopSurface(UIElement content, ScreenPoint position) : 
             SET_WINDOW_POS_FLAGS.SWP_NOMOVE | SET_WINDOW_POS_FLAGS.SWP_NOSIZE | SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE);
     }
 
+    public void MoveTo(ScreenPoint position)
+    {
+        Position = position;
+        if (_source is not { IsDisposed: false } source)
+        {
+            return;
+        }
+
+        var window = new HWND(source.Handle);
+        var origin = ToClient(PInvoke.GetParent(window), position);
+        PInvoke.SetWindowPos(window, HWND.Null, origin.X, origin.Y, 0, 0,
+            SET_WINDOW_POS_FLAGS.SWP_NOSIZE | SET_WINDOW_POS_FLAGS.SWP_NOZORDER | SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE);
+    }
+
     public void Dispose() => Release();
+
+    private static System.Drawing.Point ToClient(HWND parent, ScreenPoint position)
+    {
+        var point = new System.Drawing.Point(position.X, position.Y);
+        PInvoke.ScreenToClient(parent, ref point);
+        return point;
+    }
 
     private void Release()
     {

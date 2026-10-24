@@ -40,7 +40,7 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 | ConfigStore | `Config/` | `%APPDATA%\DeskFolders\config.json`，只存 widget 位置、面板欄數、項目排序、根目錄路徑、拖入模式 |
 | FolderScanner | `Folders/` | 根目錄預設 `%USERPROFILE%\DeskFolders\`，每個子資料夾 = 一個 widget；FileSystemWatcher 監聽 Created/Deleted/Renamed/Changed，300ms debounce；Renamed 要轉移 config 中的位置與排序；根目錄位於使用者桌面時拒絕並提示 |
 | IconService | `Icons/` | IShellItemImageFactory 取 256px 圖示；依排序取前 4 個合成 2×2 預覽；快取，資料夾變動才重建 |
-| FolderWidget | 待定 | 桌面上的資料夾圖示 + 名稱，可拖動並存位置 |
+| FolderWidget | `Widgets/` | 桌面上的資料夾圖示 + 名稱，可拖動並存位置（`FolderWidget` 視圖、`WidgetBoard` 同步與擺放、`WidgetGrid` 格線） |
 | PopupPanel | 待定 | 格子面板（預設 3 欄，超過可捲動，不分頁）；點項目用 ShellExecute 啟動；點外部 / Esc / 失焦收合 |
 | TrayApp | 待定 | 系統匣選單：新增資料夾、開啟根目錄、設定、開機自啟開關、結束 |
 | （輔助）Log | `Diagnostics/` | 簡易 append-only log |
@@ -77,6 +77,16 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 - **快取**：僅記憶體。圖示 key = (路徑, LastWriteTimeUtc)，快取的是 `Task`，同時重複請求只取一次。預覽 key = 前 4 個項目的 (路徑, ticks)，第 5 個以後變動不重建。`Retain(widgets)` 在每次 catalog 刷新時清掉已消失/已變更的項目。
 - **預覽版面**（`PreviewComposer`）：256×256 透明圖，2×2、間距 8%、依列填滿；不足 4 個留空格。資料夾底色由 widget 自己畫（階段 4）。
 
+## Widgets 實作要點（階段 4）
+
+- **外觀**（使用者選定）：48 DIP 淺色半透明圓角方塊（白 30%、圓角 22.37%）內放預覽，下方名稱用系統圖示字型、白字陰影、最多 2 行；滑鼠移上時整格淡白高亮（像原生圖示）。
+- **格子**：一格 = widget 佔位 76×96 DIP（依所在螢幕 DPI 換算成實體像素），從**工作區右上角**起算、每欄由上往下填、滿了往左開新欄。每個 widget 都在格子上，且一格一個。
+- **擺放**：有存位置 → 吸到最近的空格；沒存過 → 主螢幕第一個空格（先處理有存位置的，新 widget 才不會佔掉它們的格）。結果寫回 config（沒變就不寫）。
+- **拖曳**：`FolderWidget` 只把滑鼠轉成 Clicked / DragStarted / Dragged(游標位移, 實體像素) / DragCompleted，超過系統 `SM_CXDRAG` 才算拖。拖曳中自由跟隨游標；放開後吸到最近空格（目標格有人 → 次近空格）並存檔。
+- **生命週期**：`WidgetBoard.Show` 依資料夾名稱比對：消失的移除、新的建立、既有的更新名稱與預覽。資料夾改名 = 舊 widget 移除、新 widget 在轉移過來的位置建立。
+- **DesktopHost**：`Add` 在已有圖示層時立即掛上（快取上次找到的 DefView，`IsWindow` 檢查），`Remove` 銷毀視窗；建立子視窗失敗（`Win32Exception`）→ 進入重試。
+- **暫時**：widget 右鍵選單只有「結束 DeskFolders」，階段 6 系統匣完成後移除。點擊目前只寫 log，階段 5 開面板。
+
 # 行為規則（必須遵守）
 
 - 拖 `.exe` 進資料夾 → 建立 `.lnk`，**禁止移動或複製 exe 本體**
@@ -94,8 +104,8 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 |---|---|---|
 | 1 | Spike：DesktopHost 驗證（純色方塊掛桌面；所有視窗後方、Win+D 後可見、重啟 explorer 自動恢復） | ✅ 2026-10-24 使用者驗證通過 |
 | 2 | ConfigStore + FolderScanner + FileSystemWatcher | ✅ 2026-10-24 使用者驗證通過 |
-| 3 | IconService + 預覽合成 | ✅ 完成 2026-10-24，待使用者驗證 |
-| 4 | FolderWidget（顯示、拖動、存位置） | ⏳ |
+| 3 | IconService + 預覽合成 | ✅ 2026-10-24 使用者驗證通過 |
+| 4 | FolderWidget（顯示、拖動、存位置） | ✅ 完成 2026-10-24，待使用者驗證 |
 | 5 | PopupPanel（格子、啟動、收合） | ⏳ |
 | 6 | 拖放加入、TrayApp、開機自啟 | ⏳ |
 | 7 | GitHub Actions CI、self-contained 打包、README（含 SmartScreen 未簽章說明）、LICENSE (MIT) | ⏳ |

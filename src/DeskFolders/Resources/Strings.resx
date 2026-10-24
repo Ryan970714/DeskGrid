@@ -15,6 +15,9 @@
   <data name="AppName" xml:space="preserve">
     <value>DeskFolders</value>
   </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>Exit DeskFolders</value>
+  </data>
   <data name="RootFolderRejected" xml:space="preserve">
     <value>The root folder "{0}" can't be used: {1}
 
