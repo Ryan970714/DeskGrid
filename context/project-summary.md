@@ -29,23 +29,25 @@ src/DeskFolders/
   Desktop/                DesktopHost, DesktopSurface, IconLayer, ScreenPoint
   Diagnostics/            Log
   Folders/                FolderScanner, WidgetCatalog, RootFolder, NaturalStringComparer, records
+  Icons/                  IconService, ShellImage, PreviewComposer
   Resources/              Strings.resx (en), Strings.zh-TW.resx
+  Threading/              DispatcherThread (STA worker)
   Spike/                  SpikeTile (placeholder, 階段 4 移除)
 tests/DeskFolders.Tests/  xUnit v3
 context/                  session context docs
 ```
 
 ## Core Modules
-DesktopHost（`Desktop/`）、ConfigStore（`Config/`）、FolderScanner + WidgetCatalog（`Folders/`）。其餘模組見 `CLAUDE.md`「架構」。
+DesktopHost（`Desktop/`）、ConfigStore（`Config/`）、FolderScanner + WidgetCatalog（`Folders/`）、IconService（`Icons/`）。其餘模組見 `CLAUDE.md`「架構」。
 
 ## Coding Rules
 見 `AGENTS.md`.
 
 ## Current Milestone
-階段 2：ConfigStore + FolderScanner + FileSystemWatcher。
+階段 3：IconService + 2×2 預覽合成。
 
 ## Current Status
-階段 1 使用者驗證通過。階段 2 完成，21 個測試通過，本機實機驗證通過，待使用者手動驗證。
+階段 1、2 使用者驗證通過。階段 3 完成，28 個測試通過，本機實機驗證通過，待使用者手動驗證。
 
 ## Known Issues
 - 舊版桌面階層（Win10 / Win11 ≤ 23H2）程式路徑尚未實機測試。
@@ -56,6 +58,9 @@ DesktopHost（`Desktop/`）、ConfigStore（`Config/`）、FolderScanner + Widge
 - 程式關閉期間改名的資料夾/項目無法轉移設定（下次啟動視為刪除 + 新增）。
 - 無法讀取的 widget 資料夾（權限不足）在該次掃描中視為不存在，其設定會被清除。
 - 執行中刪除根目錄本身：watcher 停止，不會自動恢復（重啟 app 會重建）。
+- 捷徑目標程式更新圖示但 .lnk 本身沒變時，快取的舊圖示要到重啟 app 才更新。
+- 圖示快取只在記憶體，每次啟動重新向 Shell 取（每個項目一次）。
+- 只有小尺寸圖示的程式在 256px 時由 Shell 放大，可能偏糊（本機樣本都有 256px 圖示）。
 - Spike 文字未進資源檔（暫時性 placeholder）。
 
 ## Future Plan

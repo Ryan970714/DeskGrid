@@ -102,3 +102,30 @@
 **Author**: Claude
 
 ---
+
+### 2026-10-24 — 項目一律顯示圖示，不用內容縮圖
+**Decision**: `SIIGBF_ICONONLY`；圖片、PDF、影片也顯示檔案類型圖示。
+**Reason**: 照規格「取圖示」；全部正方形、風格一致像手機資料夾；不觸發縮圖產生，較快。
+**Alternatives**: `SIIGBF_RESIZETOFIT`（有縮圖就用，非正方形需加邊）。
+**Consequences**: 看不到圖片內容。
+**Author**: 使用者決定（附實測對照圖）
+
+---
+
+### 2026-10-24 — Shell 圖示以直通 alpha 解讀
+**Decision**: 從 DIB section 複製像素，以 `PixelFormats.Bgra32` 建立。
+**Reason**: 實測多個圖示有 RGB > A 的像素，預乘格式不可能出現，故為直通 alpha；`CreateBitmapSourceFromHBitmap` 會丟 alpha。
+**Alternatives**: `Pbgra32`（邊緣會偏亮，alpha=0 但有色的像素會變成可見雜訊）。
+**Consequences**: 若某些 Shell handler 回傳預乘資料，邊緣會略暗（未觀察到）。
+**Author**: Claude
+
+---
+
+### 2026-10-24 — IconService 執行緒與快取
+**Decision**: Shell 呼叫與合成在單一專用 STA 執行緒；快取只放記憶體，以 (路徑, LastWriteTimeUtc) 為 key 並快取 `Task`；預覽依前 4 項的 key 決定是否重建；`Retain` 隨 catalog 刷新清除。
+**Reason**: Shell handler 可能很慢，不可卡 UI；frozen bitmap 可跨執行緒；mtime 讓「檔案變動才重建」不需要額外事件。
+**Alternatives**: UI 執行緒同步取圖；磁碟快取；多執行緒取圖。
+**Consequences**: 啟動時每個項目要向 Shell 取一次；捷徑目標圖示變了但 .lnk 沒變時不會更新。
+**Author**: Claude
+
+---

@@ -4,6 +4,16 @@
 
 ---
 
+**2026-10-24（階段 3）**
+**Goal**: IconService + 2×2 預覽合成。
+**Completed**: Icons/（ShellImage、PreviewComposer、IconService）、Threading/DispatcherThread；28 個測試通過；實驗確認 256px 與直通 alpha；實機預覽即時更新。
+**Modified**: App.xaml.cs、SpikeTile、NativeMethods.txt、測試改用共用 DispatcherThread。
+**Decisions**: 一律圖示（使用者）；Bgra32；STA 執行緒 + mtime 快取（見 decisions.md）。
+**Next Session**: 使用者驗證後開始階段 4，先確認 widget 外觀與預設位置。
+**Issues**: 捷徑目標圖示更新需重啟；`%USERPROFILE%\DeskFolders` 留有 4 個示範資料夾。
+
+---
+
 **2026-10-24（階段 2）**
 **Goal**: ConfigStore + FolderScanner + FileSystemWatcher。
 **Completed**: Config/、Folders/、資源檔 en/zh-TW、xUnit v3 測試 21 個通過；實機驗證掃描、排序、rename 轉移。

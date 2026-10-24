@@ -1,6 +1,5 @@
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Windows.Threading;
 using DeskFolders.Diagnostics;
 
 namespace DeskFolders.Tests;
@@ -43,33 +42,4 @@ internal sealed class TempDirectory : IDisposable
             // A watcher may still hold a handle; %TEMP% gets cleaned eventually.
         }
     }
-}
-
-/// <summary>A WPF dispatcher on its own STA thread, standing in for the app's UI thread.</summary>
-internal sealed class DispatcherThread : IDisposable
-{
-    private readonly Dispatcher _dispatcher;
-
-    public DispatcherThread()
-    {
-        var started = new TaskCompletionSource<Dispatcher>();
-        var thread = new Thread(() =>
-        {
-            SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext());
-            started.SetResult(Dispatcher.CurrentDispatcher);
-            Dispatcher.Run();
-        })
-        {
-            IsBackground = true,
-        };
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        _dispatcher = started.Task.GetAwaiter().GetResult();
-    }
-
-    public Task<T> InvokeAsync<T>(Func<T> func) => _dispatcher.InvokeAsync(func).Task;
-
-    public Task InvokeAsync(Action action) => _dispatcher.InvokeAsync(action).Task;
-
-    public void Dispose() => _dispatcher.InvokeShutdown();
 }

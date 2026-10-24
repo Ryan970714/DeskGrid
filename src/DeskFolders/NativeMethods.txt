@@ -1,4 +1,9 @@
 ChangeWindowMessageFilterEx
+DIBSECTION
+GetObject
+IShellItemImageFactory
+SHCreateItemFromParsingName
+SIIGBF
 FindWindowEx
 GetDpiForSystem
 GetParent

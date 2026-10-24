@@ -39,11 +39,12 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 | DesktopHost | `Desktop/` | 把 widget 視窗掛在桌面圖示層（所有一般視窗後方）；相容舊版與 Win11 24H2+ 桌面階層；Explorer 重啟後自動重新掛載 |
 | ConfigStore | `Config/` | `%APPDATA%\DeskFolders\config.json`，只存 widget 位置、面板欄數、項目排序、根目錄路徑、拖入模式 |
 | FolderScanner | `Folders/` | 根目錄預設 `%USERPROFILE%\DeskFolders\`，每個子資料夾 = 一個 widget；FileSystemWatcher 監聽 Created/Deleted/Renamed/Changed，300ms debounce；Renamed 要轉移 config 中的位置與排序；根目錄位於使用者桌面時拒絕並提示 |
-| IconService | 待定 | IShellItemImageFactory 取 256px 圖示；依排序取前 4 個合成 2×2 預覽；快取，資料夾變動才重建 |
+| IconService | `Icons/` | IShellItemImageFactory 取 256px 圖示；依排序取前 4 個合成 2×2 預覽；快取，資料夾變動才重建 |
 | FolderWidget | 待定 | 桌面上的資料夾圖示 + 名稱，可拖動並存位置 |
 | PopupPanel | 待定 | 格子面板（預設 3 欄，超過可捲動，不分頁）；點項目用 ShellExecute 啟動；點外部 / Esc / 失焦收合 |
 | TrayApp | 待定 | 系統匣選單：新增資料夾、開啟根目錄、設定、開機自啟開關、結束 |
 | （輔助）Log | `Diagnostics/` | 簡易 append-only log |
+| （輔助）DispatcherThread | `Threading/` | 獨立 STA 執行緒上的 WPF Dispatcher（Shell / WPF 影像用；測試也拿來當 UI 執行緒） |
 | （輔助）Strings | `Resources/` | `Strings.resx`（en，neutral）+ `Strings.zh-TW.resx`；build 時產生強型別 `DeskFolders.Resources.Strings` |
 
 ## DesktopHost 實作要點（階段 1 實測）
@@ -66,7 +67,15 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 - **清除**：重掃時移除已不存在資料夾/項目的設定。根目錄讀不到（例如磁碟消失）時**不**重算，避免一次清光所有設定。
 - **寫檔**：先寫 `.tmp` 再 rename；壞掉的 config 改名為 `config.json.<時間>.bad` 後用預設值。
 - **根目錄驗證**（`RootFolder.Prepare`）：須為完整路徑、不可在使用者桌面或公用桌面內、可建立。啟動時不合格 → 提示後改用預設並寫回 config。
-- **之後的階段**：位置載入時若跑出工作區要夾回（階段 4）；`IconService` 可用 `FolderItem.LastWriteTimeUtc` 當快取 key。
+- **之後的階段**：位置載入時若跑出工作區要夾回（階段 4）。
+
+## Icons 實作要點（階段 3）
+
+- **一律圖示，不用內容縮圖**：`SIIGBF_ICONONLY`，捷徑取目標圖示、不含箭頭 overlay。實測 256px 時 Shell 永遠回傳 256×256（`SCALEUP` 無差別）。
+- **Alpha**：Shell 回傳的 DIB section 是**直通（非預乘）alpha**（實測許多像素 RGB > A），以 `Bgra32` 建 `BitmapSource`；`CreateBitmapSourceFromHBitmap` 會丟掉 alpha，不可用。bottom-up DIB 要翻列。
+- **執行緒**：Shell 呼叫與預覽合成都在專用 STA 執行緒（`DispatcherThread "DeskFolders.Shell"`）；結果皆為 frozen bitmap，可跨執行緒。`IconService` 本身只在 UI 執行緒呼叫（快取是一般 Dictionary）。
+- **快取**：僅記憶體。圖示 key = (路徑, LastWriteTimeUtc)，快取的是 `Task`，同時重複請求只取一次。預覽 key = 前 4 個項目的 (路徑, ticks)，第 5 個以後變動不重建。`Retain(widgets)` 在每次 catalog 刷新時清掉已消失/已變更的項目。
+- **預覽版面**（`PreviewComposer`）：256×256 透明圖，2×2、間距 8%、依列填滿；不足 4 個留空格。資料夾底色由 widget 自己畫（階段 4）。
 
 # 行為規則（必須遵守）
 
@@ -84,8 +93,8 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 | # | 階段 | 狀態 |
 |---|---|---|
 | 1 | Spike：DesktopHost 驗證（純色方塊掛桌面；所有視窗後方、Win+D 後可見、重啟 explorer 自動恢復） | ✅ 2026-10-24 使用者驗證通過 |
-| 2 | ConfigStore + FolderScanner + FileSystemWatcher | ✅ 完成 2026-10-24，待使用者驗證 |
-| 3 | IconService + 預覽合成 | ⏳ |
+| 2 | ConfigStore + FolderScanner + FileSystemWatcher | ✅ 2026-10-24 使用者驗證通過 |
+| 3 | IconService + 預覽合成 | ✅ 完成 2026-10-24，待使用者驗證 |
 | 4 | FolderWidget（顯示、拖動、存位置） | ⏳ |
 | 5 | PopupPanel（格子、啟動、收合） | ⏳ |
 | 6 | 拖放加入、TrayApp、開機自啟 | ⏳ |

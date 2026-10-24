@@ -2,6 +2,7 @@ using System.IO;
 using DeskFolders.Config;
 using DeskFolders.Desktop;
 using DeskFolders.Folders;
+using DeskFolders.Threading;
 
 namespace DeskFolders.Tests;
 
@@ -10,7 +11,7 @@ public sealed class WidgetCatalogTests : IDisposable
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
 
     private readonly TempDirectory _temp = new();
-    private readonly DispatcherThread _ui = new();
+    private readonly DispatcherThread _ui = new("Test UI");
 
     private string RootPath => _temp.Combine("root");
 

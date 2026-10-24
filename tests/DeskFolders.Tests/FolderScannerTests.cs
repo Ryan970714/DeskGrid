@@ -1,12 +1,13 @@
 using System.IO;
 using DeskFolders.Folders;
+using DeskFolders.Threading;
 
 namespace DeskFolders.Tests;
 
 public sealed class FolderScannerTests : IDisposable
 {
     private readonly TempDirectory _root = new();
-    private readonly DispatcherThread _ui = new();
+    private readonly DispatcherThread _ui = new("Test UI");
 
     public void Dispose()
     {

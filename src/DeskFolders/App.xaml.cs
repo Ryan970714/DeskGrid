@@ -4,6 +4,7 @@ using DeskFolders.Config;
 using DeskFolders.Desktop;
 using DeskFolders.Diagnostics;
 using DeskFolders.Folders;
+using DeskFolders.Icons;
 using DeskFolders.Resources;
 using DeskFolders.Spike;
 
@@ -13,6 +14,7 @@ public partial class App : Application
 {
     private DesktopHost? _desktopHost;
     private WidgetCatalog? _catalog;
+    private IconService? _icons;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -24,8 +26,13 @@ public partial class App : Application
         EnsureUsableRootFolder(configStore);
 
         var tile = new SpikeTile();
+        _icons = new IconService();
         _catalog = new WidgetCatalog(configStore);
-        _catalog.Changed += (_, _) => tile.ShowWidgets(_catalog.Widgets);
+        _catalog.Changed += (_, _) =>
+        {
+            _icons.Retain(_catalog.Widgets);
+            tile.ShowWidgets(_catalog.Widgets, _icons);
+        };
 
         _desktopHost = new DesktopHost();
         _desktopHost.Add(new DesktopSurface(tile, SpikeTile.CenterOfPrimaryScreen()));
@@ -36,6 +43,7 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _catalog?.Dispose();
+        _icons?.Dispose();
         _desktopHost?.Dispose();
         Log.Info("DeskFolders exited.");
         base.OnExit(e);
