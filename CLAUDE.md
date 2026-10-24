@@ -26,8 +26,9 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 常用指令：
 
 - 建置：`dotnet build DeskFolders.slnx`
+- 測試：`dotnet test DeskFolders.slnx`（xUnit v3，`tests/DeskFolders.Tests/`）
 - 執行：`src/DeskFolders/bin/Debug/net10.0-windows/win-x64/DeskFolders.exe`
-- Log：`%LOCALAPPDATA%\DeskFolders\deskfolders.log`
+- Log：`%LOCALAPPDATA%\DeskFolders\deskfolders.log`；Config：`%APPDATA%\DeskFolders\config.json`
 
 # 架構
 
@@ -36,13 +37,14 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 | 模組 | 資料夾 | 職責 |
 |---|---|---|
 | DesktopHost | `Desktop/` | 把 widget 視窗掛在桌面圖示層（所有一般視窗後方）；相容舊版與 Win11 24H2+ 桌面階層；Explorer 重啟後自動重新掛載 |
-| ConfigStore | 待定 | `%APPDATA%\DeskFolders\config.json`，只存 widget 位置、面板欄數、項目排序、根目錄路徑、拖入模式 |
-| FolderScanner | 待定 | 根目錄預設 `%USERPROFILE%\DeskFolders\`，每個子資料夾 = 一個 widget；FileSystemWatcher 監聽 Created/Deleted/Renamed/Changed，300ms debounce；Renamed 要轉移 config 中的位置與排序；根目錄位於使用者桌面時拒絕並提示 |
+| ConfigStore | `Config/` | `%APPDATA%\DeskFolders\config.json`，只存 widget 位置、面板欄數、項目排序、根目錄路徑、拖入模式 |
+| FolderScanner | `Folders/` | 根目錄預設 `%USERPROFILE%\DeskFolders\`，每個子資料夾 = 一個 widget；FileSystemWatcher 監聽 Created/Deleted/Renamed/Changed，300ms debounce；Renamed 要轉移 config 中的位置與排序；根目錄位於使用者桌面時拒絕並提示 |
 | IconService | 待定 | IShellItemImageFactory 取 256px 圖示；依排序取前 4 個合成 2×2 預覽；快取，資料夾變動才重建 |
 | FolderWidget | 待定 | 桌面上的資料夾圖示 + 名稱，可拖動並存位置 |
 | PopupPanel | 待定 | 格子面板（預設 3 欄，超過可捲動，不分頁）；點項目用 ShellExecute 啟動；點外部 / Esc / 失焦收合 |
 | TrayApp | 待定 | 系統匣選單：新增資料夾、開啟根目錄、設定、開機自啟開關、結束 |
 | （輔助）Log | `Diagnostics/` | 簡易 append-only log |
+| （輔助）Strings | `Resources/` | `Strings.resx`（en，neutral）+ `Strings.zh-TW.resx`；build 時產生強型別 `DeskFolders.Resources.Strings` |
 
 ## DesktopHost 實作要點（階段 1 實測）
 
@@ -54,6 +56,17 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 - **Explorer 重啟**：explorer 結束時跨行程子視窗會被一併銷毀 → `DesktopSurface.Lost` → `DesktopHost` 每秒重試，以新 `HwndSource` 掛到新的 DefView，沿用同一份 WPF content（狀態保留）。`TaskbarCreated` 廣播為第二觸發（需由隱藏的 top-level 視窗接收，message-only 視窗收不到廣播）。
 - **座標**：surface 位置為實體螢幕像素（`ScreenPoint`），掛載時轉 DefView client 座標。
 - `WS_EX_NOPARENTNOTIFY`：避免 Explorer 執行緒卡住時透過 parent notify 卡住我們。
+
+## Config / Folders 實作要點（階段 2）
+
+- **資料來源**：資料夾內容只來自磁碟；config 只補檔案系統存不了的東西。`WidgetConfig` 以資料夾名稱為 key（不分大小寫）：`Position`（實體螢幕像素，未擺放前為 null）、`ItemOrder`（檔名清單）。`PanelColumns`（全域，預設 3）、`DropMode`（move/copy）、`RootPath` 為全域。
+- **項目**：widget 資料夾內的可見檔案（略過隱藏/系統檔，如 desktop.ini）；子資料夾不算項目；根目錄下的散檔忽略。首次依 Explorer 自然排序（`StrCmpLogicalW`），新項目接在最後，消失的項目從排序移除。
+- **執行緒**：`FolderScanner` 必須在有 `SynchronizationContext` 的執行緒（UI）建立；所有事件依發生順序 post 回該 context，因此 rename 一定先於隨後的 refresh 被處理。整個 config 只在 UI 執行緒存取，不需鎖。
+- **Rename**：`WidgetRenamed` / `ItemRenamed` 立即轉移設定並存檔；其他變動 300ms debounce 後整個重掃（資料量小，重掃比追蹤差異簡單）。watcher 溢位 → 重掃。
+- **清除**：重掃時移除已不存在資料夾/項目的設定。根目錄讀不到（例如磁碟消失）時**不**重算，避免一次清光所有設定。
+- **寫檔**：先寫 `.tmp` 再 rename；壞掉的 config 改名為 `config.json.<時間>.bad` 後用預設值。
+- **根目錄驗證**（`RootFolder.Prepare`）：須為完整路徑、不可在使用者桌面或公用桌面內、可建立。啟動時不合格 → 提示後改用預設並寫回 config。
+- **之後的階段**：位置載入時若跑出工作區要夾回（階段 4）；`IconService` 可用 `FolderItem.LastWriteTimeUtc` 當快取 key。
 
 # 行為規則（必須遵守）
 
@@ -70,8 +83,8 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 
 | # | 階段 | 狀態 |
 |---|---|---|
-| 1 | Spike：DesktopHost 驗證（純色方塊掛桌面；所有視窗後方、Win+D 後可見、重啟 explorer 自動恢復） | ✅ 完成 2026-10-24，待使用者驗證 |
-| 2 | ConfigStore + FolderScanner + FileSystemWatcher | ⏳ |
+| 1 | Spike：DesktopHost 驗證（純色方塊掛桌面；所有視窗後方、Win+D 後可見、重啟 explorer 自動恢復） | ✅ 2026-10-24 使用者驗證通過 |
+| 2 | ConfigStore + FolderScanner + FileSystemWatcher | ✅ 完成 2026-10-24，待使用者驗證 |
 | 3 | IconService + 預覽合成 | ⏳ |
 | 4 | FolderWidget（顯示、拖動、存位置） | ⏳ |
 | 5 | PopupPanel（格子、啟動、收合） | ⏳ |

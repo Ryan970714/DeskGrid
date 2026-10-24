@@ -8,5 +8,6 @@ RegisterWindowMessage
 ScreenToClient
 SendMessageTimeout
 SetWindowPos
+StrCmpLogicalW
 WINDOW_EX_STYLE
 WINDOW_STYLE

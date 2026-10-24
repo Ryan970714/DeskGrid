@@ -57,3 +57,48 @@
 **Author**: Claude
 
 ---
+
+### 2026-10-24 — 階段 2 config 語意
+**Decision**: widget 位置存實體螢幕像素（載入時跑出工作區就夾回）；面板欄數為全域一個設定；重掃時清除已不存在資料夾/項目的設定（換根目錄等同全新開始）；啟動時根目錄不合格 → 提示後改用預設並寫回 config。
+**Reason**: 實體像素與 `DesktopSurface` 一致，改縮放比例時位置不跑；全域欄數像手機資料夾且不需 per-widget UI；config 只反映現存資料夾。
+**Alternatives**: DIP / 工作區相對比例；per-widget 欄數；永久保留殘留設定；提示後結束程式。
+**Consequences**: 刪除後從資源回收筒還原的資料夾會回到預設位置。
+**Author**: 使用者決定
+
+---
+
+### 2026-10-24 — 掃描與 config 協調拆成 FolderScanner + WidgetCatalog
+**Decision**: `FolderScanner` 只管檔案系統（掃描、watcher、debounce、rename 事件）；`WidgetCatalog` 把掃描結果與 config 合併（排序、清除、rename 轉移、存檔）。
+**Reason**: 單一職責；合併邏輯（`Reconcile`）是純函式，可不碰磁碟直接測。
+**Alternatives**: FolderScanner 直接依賴 ConfigStore 一手包辦。
+**Consequences**: 之後的 UI 只訂閱 `WidgetCatalog.Changed`。
+**Author**: Claude
+
+---
+
+### 2026-10-24 — 事件序列化靠 SynchronizationContext，debounce 後整個重掃
+**Decision**: `FolderScanner` 捕捉建立時的 `SynchronizationContext`（沒有就丟例外），所有事件依序 post 回去；debounce 結束後整個根目錄重掃，不做增量更新。
+**Reason**: config 只在 UI 執行緒存取，不需鎖；rename 一定先於後續 refresh。資料量小（數十資料夾 × 數十項目），重掃成本可忽略且不會漏事件。
+**Alternatives**: 背景執行緒 + lock；依事件做增量更新。
+**Consequences**: 測試需在 WPF Dispatcher 執行緒上建立 scanner（`DispatcherThread` helper）。
+**Author**: Claude
+
+---
+
+### 2026-10-24 — 項目範圍與預設排序
+**Decision**: 項目 = widget 資料夾內的可見檔案（略過隱藏/系統檔、子資料夾、根目錄散檔）；首次依 Explorer 自然排序，之後新項目接在最後。
+**Reason**: 規格支援 .lnk/.url/.exe/一般檔案，不含資料夾；desktop.ini、Office 暫存檔不該出現；接在最後符合手機加入 App 的直覺。
+**Alternatives**: 依名稱或修改時間每次重排；子資料夾也顯示為項目。
+**Consequences**: 目前沒有手動重排 UI，排序只由加入順序決定。
+**Author**: Claude（慣例預設，已於階段回報告知使用者）
+
+---
+
+### 2026-10-24 — 測試框架 xUnit v3
+**Decision**: `tests/DeskFolders.Tests`，xUnit v3 3.2.2 + VSTest runner；`Log.FilePath` 可由測試改寫，避免寫進真實 log。
+**Reason**: 開源專案常見；Config/Folders 是純邏輯，適合自動測試。
+**Alternatives**: MSTest、NUnit；只做手動測試。
+**Consequences**: `InternalsVisibleTo("DeskFolders.Tests")`；共用設定移到 `Directory.Build.props`。
+**Author**: Claude
+
+---

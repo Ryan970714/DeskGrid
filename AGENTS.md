@@ -14,7 +14,8 @@
 - 每個模組一個資料夾，file-scoped namespace `DeskFolders.<Folder>`
 - 類別預設 `internal sealed`；private 欄位 `_camelCase`
 - Win32 API 一律透過 CsWin32（加到 `src/DeskFolders/NativeMethods.txt`），不手寫 `DllImport`
-- 建置零警告（`TreatWarningsAsErrors`）；CA1416 已在 csproj 以註解說明原因後關閉
+- 建置零警告（`TreatWarningsAsErrors`）；CA1416 已在 `Directory.Build.props` 以註解說明原因後關閉
+- 純邏輯（Config、Folders 等）要有 xUnit 測試；使用者介面文字一律放 `Resources/Strings*.resx`（en + zh-TW）
 - 不使用第三方 UI 框架
 
 # 修改程式前

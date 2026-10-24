@@ -1,0 +1,14 @@
+<Project>
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <!-- Minimum OS is Windows 10 22H2, but a versioned TFM would pull in the 20+ MB WinRT projection.
+         CA1416 only knows the TFM's Windows 7 baseline, so it flags every Windows 10 API. -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+
+</Project>

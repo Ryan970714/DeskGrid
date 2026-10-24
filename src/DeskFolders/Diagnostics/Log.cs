@@ -8,7 +8,8 @@ internal static class Log
 {
     private static readonly Lock Gate = new();
 
-    public static string FilePath { get; } = Path.Combine(
+    // Settable so tests don't write into the real log.
+    public static string FilePath { get; internal set; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DeskFolders", "deskfolders.log");
 
     public static void Info(string message) => Write("INFO", message);
