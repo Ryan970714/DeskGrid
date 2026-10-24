@@ -7,7 +7,14 @@
   - `DesktopSurface`：layered 子視窗 HwndSource，可重建並沿用 WPF content
   - `DesktopHost`：Lost 事件 + 每秒重試 + `TaskbarCreated` 監聽，自動重掛
   - 專案 context 文件（CLAUDE.md、AGENTS.md、context/）
-- 階段 4：FolderWidget（待驗證）
+- 階段 5：PopupPanel（待驗證）
+  - `PopupPanel`（XAML）：標題、3 欄格子、4 列後捲動、空資料夾提示、Esc / 失焦收合、即時刷新
+  - `PanelController`：一次一個面板、切換、啟動後收合
+  - `PanelPlacement`：widget 下/上/左/右、夾回工作區
+  - `PanelTheme` + `Backdrop`：system（Win11 Acrylic）/ dark / light / custom；config `panelBackground`
+  - `ShellItem`：ShellExecuteEx 啟動、Shell 顯示名稱
+  - `DesktopSurface` 回 `MA_NOACTIVATE`；11 個新測試（共 48）
+- 階段 4：FolderWidget（使用者驗證通過）
   - `FolderWidget`（XAML）：48 DIP 淺色半透明方塊 + 名稱、hover 高亮、點擊/拖曳手勢、暫時性結束選單
   - `WidgetGrid`：右上角起算的 76×96 DIP 格子、FirstFree / NearestFree
   - `WidgetBoard`：依 catalog 同步 widget、擺放、拖曳吸附、存位置
