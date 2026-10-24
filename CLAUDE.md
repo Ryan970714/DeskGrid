@@ -1,0 +1,105 @@
+# DeskFolders
+
+Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯示內部 App 的 2×2 縮圖預覽，點擊展開格子面板，點外部或 Esc 收合。每個 widget 對應一個實體資料夾，改資料夾內容即同步。之後以 MIT 開源，程式碼需整潔、可維護。
+
+# Session 啟動流程
+
+每次新的 Session，依序閱讀：
+
+1. `AGENTS.md`
+2. `context/project-summary.md`
+3. `context/current-task.md`
+4. `context/progress.md`
+5. `context/todo.md`
+6. `context/decisions.md`
+7. `context/session-log.md`
+
+閱讀完成後再開始工作。不得要求使用者重新解釋專案——所有長期背景都在本檔與上述檔案裡。
+
+# 技術棧
+
+- C# + WPF，**.NET 10 LTS**，x64（原規格 .NET 8，因 2026-11-10 EOL 改用 .NET 10，見 `context/decisions.md`）
+- Win32 互通：CsWin32，需要的 API 列在 `src/DeskFolders/NativeMethods.txt`
+- 不使用 Electron / WinForms / 第三方 UI 框架
+- 發布：self-contained 單一 exe
+
+常用指令：
+
+- 建置：`dotnet build DeskFolders.slnx`
+- 執行：`src/DeskFolders/bin/Debug/net10.0-windows/win-x64/DeskFolders.exe`
+- Log：`%LOCALAPPDATA%\DeskFolders\deskfolders.log`
+
+# 架構
+
+每個模組一個資料夾 `src/DeskFolders/<Folder>/`，namespace `DeskFolders.<Folder>`。
+
+| 模組 | 資料夾 | 職責 |
+|---|---|---|
+| DesktopHost | `Desktop/` | 把 widget 視窗掛在桌面圖示層（所有一般視窗後方）；相容舊版與 Win11 24H2+ 桌面階層；Explorer 重啟後自動重新掛載 |
+| ConfigStore | 待定 | `%APPDATA%\DeskFolders\config.json`，只存 widget 位置、面板欄數、項目排序、根目錄路徑、拖入模式 |
+| FolderScanner | 待定 | 根目錄預設 `%USERPROFILE%\DeskFolders\`，每個子資料夾 = 一個 widget；FileSystemWatcher 監聽 Created/Deleted/Renamed/Changed，300ms debounce；Renamed 要轉移 config 中的位置與排序；根目錄位於使用者桌面時拒絕並提示 |
+| IconService | 待定 | IShellItemImageFactory 取 256px 圖示；依排序取前 4 個合成 2×2 預覽；快取，資料夾變動才重建 |
+| FolderWidget | 待定 | 桌面上的資料夾圖示 + 名稱，可拖動並存位置 |
+| PopupPanel | 待定 | 格子面板（預設 3 欄，超過可捲動，不分頁）；點項目用 ShellExecute 啟動；點外部 / Esc / 失焦收合 |
+| TrayApp | 待定 | 系統匣選單：新增資料夾、開啟根目錄、設定、開機自啟開關、結束 |
+| （輔助）Log | `Diagnostics/` | 簡易 append-only log |
+
+## DesktopHost 實作要點（階段 1 實測）
+
+- **掛載點**：widget 是 `HwndSource`（`WS_CHILD`，`UsesPerPixelTransparency` → `WS_EX_LAYERED`），父視窗為 `SHELLDLL_DefView`，z-order 在 `SysListView32`（圖示）之上 → 可接收點擊、在所有一般視窗後方、Win+D 後仍可見。
+- **兩種階層**（`IconLayer.Find()` 都處理，先送 Progman `0x052C`）：
+  - 新版（24H2+，本機 build 26300 實測）：`Progman`[`WS_EX_NOREDIRECTIONBITMAP`] → `SHELLDLL_DefView`[`WS_EX_LAYERED`] → `SysListView32`；另有 `Progman` → `WorkerW`（子視窗）。
+  - 舊版（Win10 ~ Win11 23H2）：top-level `WorkerW` → `SHELLDLL_DefView`（split 前在 `Progman` 下）。**尚未實機測試。**
+- **必須 layered**：24H2+ 的 Progman 是 composition-based，非 layered 子視窗不會被畫出；layered 也讓全透明像素可點穿。
+- **Explorer 重啟**：explorer 結束時跨行程子視窗會被一併銷毀 → `DesktopSurface.Lost` → `DesktopHost` 每秒重試，以新 `HwndSource` 掛到新的 DefView，沿用同一份 WPF content（狀態保留）。`TaskbarCreated` 廣播為第二觸發（需由隱藏的 top-level 視窗接收，message-only 視窗收不到廣播）。
+- **座標**：surface 位置為實體螢幕像素（`ScreenPoint`），掛載時轉 DefView client 座標。
+- `WS_EX_NOPARENTNOTIFY`：避免 Explorer 執行緒卡住時透過 parent notify 卡住我們。
+
+# 行為規則（必須遵守）
+
+- 拖 `.exe` 進資料夾 → 建立 `.lnk`，**禁止移動或複製 exe 本體**
+- 拖桌面捷徑進資料夾 → 預設「移動」，設定可改「複製」
+- 支援項目：`.lnk` / `.url` / `.exe` / 一般檔案
+- 啟動一律用 ShellExecute
+- Per-Monitor V2 DPI aware（MVP 先確保單螢幕正確，多螢幕列為後續）
+- 介面文字放資源檔，支援 zh-TW / en
+
+# 開發階段與進度
+
+一次只做一個階段，完成後停下等使用者驗證。
+
+| # | 階段 | 狀態 |
+|---|---|---|
+| 1 | Spike：DesktopHost 驗證（純色方塊掛桌面；所有視窗後方、Win+D 後可見、重啟 explorer 自動恢復） | ✅ 完成 2026-10-24，待使用者驗證 |
+| 2 | ConfigStore + FolderScanner + FileSystemWatcher | ⏳ |
+| 3 | IconService + 預覽合成 | ⏳ |
+| 4 | FolderWidget（顯示、拖動、存位置） | ⏳ |
+| 5 | PopupPanel（格子、啟動、收合） | ⏳ |
+| 6 | 拖放加入、TrayApp、開機自啟 | ⏳ |
+| 7 | GitHub Actions CI、self-contained 打包、README（含 SmartScreen 未簽章說明）、LICENSE (MIT) | ⏳ |
+
+# 工作方式
+
+- 使用 Git，每階段完成 commit 一次，訊息用英文 conventional commits
+- 每階段結束告訴使用者：做了什麼、如何手動測試、已知問題
+- 不確定的設計決策先問使用者，不要自行假設
+- 每完成一階段更新本檔「開發階段與進度」
+
+# Session 結束流程
+
+每次工作完成，依序執行：
+
+1. 更新 `context/current-task.md`
+2. 更新 `context/progress.md`
+3. 更新 `context/todo.md`
+4. 若有架構修改／設計修改／重要決策 → 新增一筆到 `context/decisions.md`（只能新增，不得覆蓋既有紀錄）
+5. 若專案摘要改變 → 更新 `context/project-summary.md`（保持精簡，1–3 頁，不寫工作日誌）
+6. 新增一筆到 `context/session-log.md`（最新放最上方，每筆不超過 10 行）
+
+完成後輸出：**本次完成內容**、**如何手動測試**、**已知問題**、**下一步建議**。不要重新輸出所有 Markdown 內容。
+
+# Context 管理原則
+
+- 聊天內容是短期記憶，Markdown 是永久記憶。所有長期資訊必須寫入本檔或 `context/*.md`，不要依賴聊天歷史。
+- 新 Session 應能只靠閱讀上述 Markdown 檔案就恢復完整工作狀態。
+- 需要背景時優先引用 Markdown，避免在聊天中重複專案背景、架構、技術棧、或重複描述已完成工作——Markdown 永遠優先於聊天紀錄。

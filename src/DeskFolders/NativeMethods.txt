@@ -1,0 +1,12 @@
+ChangeWindowMessageFilterEx
+FindWindowEx
+GetDpiForSystem
+GetParent
+GetSystemMetrics
+GetWindowLong
+RegisterWindowMessage
+ScreenToClient
+SendMessageTimeout
+SetWindowPos
+WINDOW_EX_STYLE
+WINDOW_STYLE
