@@ -4,6 +4,16 @@
 
 ---
 
+**2026-10-25（階段 7）**
+**Goal**: CI、self-contained 打包、README、LICENSE。
+**Completed**: publish profile（62 MB 單一 exe，實測可執行）、ci.yml、release.yml、README en/zh-TW、MIT LICENSE、csproj 版本資訊；公開前掃描個人資訊。
+**Modified**: DeskFolders.csproj、.gitignore（artifacts/、pubxml 例外）。
+**Decisions**: 公開 repo、tag Release、Ryan Kuo、雙語 README（使用者）；打包設定（見 decisions.md）。
+**Next Session**: 授權 workflow 權限 → 建 repo 推送 → 確認 CI → 是否發布 v0.1.0。
+**Issues**: gh token 缺 workflow 權限。
+
+---
+
 **2026-10-25（階段 6）**
 **Goal**: 拖放加入、TrayApp、開機自啟。
 **Completed**: Tray/、Settings/、Shell/、ItemImporter、WidgetFolderName、App 圖示、單一執行個體；72 測試；實機驗證系統匣、設定、新增資料夾、開機自啟、OLE 拖放。

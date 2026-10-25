@@ -237,3 +237,21 @@
 **Author**: Claude
 
 ---
+
+### 2026-10-25 — 發布：公開 repo、tag 自動 Release、MIT（Ryan Kuo）、雙語 README
+**Decision**: 公開 repo `Ryan970714/DeskFolders`；push/PR 跑 CI（build、test、publish artifact）；推 `v*` tag 自動建 Release（附單一 exe 與 SHA256）；LICENSE 著作權人 Ryan Kuo；README 英文 + 繁中。
+**Reason**: 使用者選定。
+**Alternatives**: 私人 repo；只要 CI；只有英文 README。
+**Consequences**: CLAUDE.md、context/ 也會公開（已掃描無個人資訊）；推送 workflow 檔需要 gh `workflow` 權限。
+**Author**: 使用者決定
+
+---
+
+### 2026-10-25 — 打包設定
+**Decision**: publish profile `win-x64`：self-contained + PublishSingleFile + IncludeNativeLibrariesForSelfExtract + 壓縮 + 無 pdb，輸出到 `artifacts/publish/`。CI 用 `dotnet-version: 10.0.x`（global.json 的 rollForward 仍適用）。README 不放截圖（避免露出個人桌面）。
+**Reason**: 真正的單一 exe；壓縮後約 62 MB；WPF 不能 trim。
+**Alternatives**: 框架相依（小但需安裝 .NET 10 Desktop Runtime）；不壓縮（約 150 MB，啟動略快）。
+**Consequences**: 首次執行會把 WPF 原生 DLL 解到 %TEMP%。
+**Author**: Claude
+
+---

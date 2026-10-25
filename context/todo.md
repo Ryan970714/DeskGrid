@@ -1,11 +1,11 @@
 # Todo
 
 ## High Priority
-- 使用者手動驗證階段 6（特別是：從檔案總管桌面拖捷徑 / exe / 檔案 / 資料夾到 widget）
+- 推上公開 repo、確認 CI 通過；決定是否發布 v0.1.0
 - 在 Win10 22H2（或 Win11 23H2）驗證舊版桌面階層與面板非 Acrylic 路徑（可用 VirtualBox VM）
 
 ## Medium Priority
-- 階段 7 開始前需確認：GitHub repo 名稱、公開或私人、發布方式（GitHub Releases 附 self-contained exe？）、CI 範圍（build + test）
+- README 加截圖（避免露出個人桌面圖示）
 - 面板開著時拖曳另一個 widget → 關閉面板
 
 ## Low Priority

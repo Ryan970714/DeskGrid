@@ -28,6 +28,8 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 - 建置：`dotnet build DeskFolders.slnx`
 - 測試：`dotnet test DeskFolders.slnx`（xUnit v3，`tests/DeskFolders.Tests/`）
 - 執行：`src/DeskFolders/bin/Debug/net10.0-windows/win-x64/DeskFolders.exe`
+- 打包：`dotnet publish src/DeskFolders/DeskFolders.csproj -p:PublishProfile=win-x64` → `artifacts/publish/DeskFolders.exe`（self-contained 單一 exe，約 62 MB）
+- 發布：推送 `v*` tag（例如 `v0.1.0`）→ GitHub Actions 建 Release，附 exe 與 `.sha256`
 - Log：`%LOCALAPPDATA%\DeskFolders\deskfolders.log`；Config：`%APPDATA%\DeskFolders\config.json`
 
 # 架構
@@ -113,6 +115,15 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 - **XAML 不可引用本組件型別**（例如 `x:Static` 到 `Strings`）：`Strings` 在 build 時才產生在 `obj/`，WPF 的暫時標記組件編譯不到。介面文字在 code-behind 設定。
 - **App 圖示**：`tools/make-icon.ps1` 產生 `src/DeskFolders/Assets/DeskFolders.ico`（多尺寸 PNG ICO）。
 
+## 發布與 CI（階段 7）
+
+- **GitHub**：公開 repo `Ryan970714/DeskFolders`，預設分支 `main`，MIT（著作權人 Ryan Kuo）。README 英文（`README.md`）+ 繁中（`README.zh-TW.md`），內容需保持一致。
+- **打包**：`Properties/PublishProfiles/win-x64.pubxml`：self-contained、PublishSingleFile、`IncludeNativeLibrariesForSelfExtract`（WPF 原生 DLL 也包進 exe，首次執行解到 %TEMP%）、壓縮、無 pdb。WPF 不支援 trimming。`.gitignore` 範本會忽略 `*.pubxml`，已為這個 profile 加例外。
+- **CI**（`.github/workflows/ci.yml`）：push 到 main 與 PR → windows-latest、.NET 10.0.x → build、test、publish，exe 上傳為 artifact。
+- **Release**（`release.yml`）：推 `v*` tag → test → 以 tag 版本號 publish → `gh release create`，附 `DeskFolders-<版本>-win-x64.exe` 與 `.sha256`。csproj 的 `<Version>` 是本機建置的預設值。
+- **未簽章**：README 說明 SmartScreen「其他資訊 → 仍要執行」與 SHA256 驗證。
+- 推送 `.github/workflows/` 需要 gh token 的 `workflow` 權限（`gh auth refresh -h github.com -s workflow`）。
+
 # 行為規則（必須遵守）
 
 - 拖 `.exe` 進資料夾 → 建立 `.lnk`，**禁止移動或複製 exe 本體**
@@ -133,8 +144,8 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 | 3 | IconService + 預覽合成 | ✅ 2026-10-24 使用者驗證通過 |
 | 4 | FolderWidget（顯示、拖動、存位置） | ✅ 2026-10-24 使用者驗證通過 |
 | 5 | PopupPanel（格子、啟動、收合） | ✅ 2026-10-25 使用者驗證通過 |
-| 6 | 拖放加入、TrayApp、開機自啟 | ✅ 完成 2026-10-25，待使用者驗證 |
-| 7 | GitHub Actions CI、self-contained 打包、README（含 SmartScreen 未簽章說明）、LICENSE (MIT) | ⏳ |
+| 6 | 拖放加入、TrayApp、開機自啟 | ✅ 2026-10-25 使用者驗證通過 |
+| 7 | GitHub Actions CI、self-contained 打包、README（含 SmartScreen 未簽章說明）、LICENSE (MIT) | ✅ 完成 2026-10-25，待推上 GitHub 與使用者驗證 |
 
 # 工作方式
 

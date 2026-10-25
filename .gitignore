@@ -480,3 +480,8 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Publish output (dotnet publish -p:PublishProfile=win-x64)
+artifacts/
+# Our publish profile has no secrets.
+!src/DeskFolders/Properties/PublishProfiles/win-x64.pubxml

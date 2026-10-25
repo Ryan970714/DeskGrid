@@ -1,30 +1,29 @@
 # Current Task
 
 ## Current Goal
-階段 6：拖放加入、TrayApp、開機自啟（含設定視窗、新增資料夾、單一執行個體）。
+階段 7：GitHub Actions CI、self-contained 打包、README（含 SmartScreen 說明）、LICENSE (MIT)。
 
 ## Current Task
-等待使用者手動驗證階段 6。
+本機完成並已 commit；等使用者授權 gh `workflow` 權限後建立公開 repo 並推送，確認 CI 通過。
 
 ## Current Status
-實作完成並已 commit。驗證：
-- `dotnet test`：72 個測試通過（新增拖放規則、捷徑建立、同名編號、資料夾命名、開機自啟含工作管理員旗標）
-- 實機（模擬輸入，使用者同意）：系統匣選單（勾選狀態）、設定視窗開關與版面、新增資料夾對話框、開機自啟開→關（登錄已還原為無）、單一執行個體
-- 實機 OLE 拖放（自製 WPF 拖曳來源 → Test widget）：假 exe → `probe-tool.lnk`（原檔不動）、txt → `drop-notes.txt.lnk`、桌面暫存捷徑 → 移進 Test（桌面上已消失）
-- **未驗證**：從檔案總管桌面直接拖圖示到 widget（測試腳本 bug 中止，見下）
-- 修掉的 bug：manifest 缺 Common Controls v6（LoadIconMetric 啟動即當）；非模態設定視窗 Esc/取消不會關；不透明度列太寬
-- 拖放「失敗」其實是測試腳本 bug（`powershell -File` 把陣列串成一個字串），app 本身正確
-- 測試事故：Explorer 拖曳腳本的函式名 `Move` 被 PowerShell 的 `Move-Item` 別名蓋掉，游標沒移動，卻在使用者當時游標位置（可能是 Chrome）送出一次左鍵點擊；`Move-Item` 呼叫因路徑不存在全部失敗，未搬動檔案。之後停止所有模擬輸入。
-- `%USERPROFILE%\DeskFolders\Test` 內留有拖放測試產物（probe-tool.lnk、drop-notes.txt.lnk、DeskFolders Drop Probe.lnk），桌面暫存捷徑已刪除。使用者自建的 `AI` 資料夾未動。
+- 使用者決定：公開 repo `Ryan970714/DeskFolders`；CI + 推 tag 自動 Release；LICENSE 著作權人 Ryan Kuo；README 英文 + 繁中
+- `dotnet publish -p:PublishProfile=win-x64` → 62 MB 單一 exe，實際執行成功（版本 0.1.0、版權資訊正確）
+- workflows：ci.yml（push main / PR）、release.yml（v* tag，附 exe 與 .sha256）；action 版本 checkout@v7、setup-dotnet@v6、upload-artifact@v7
+- 公開前掃描：無個人路徑 / Email / token；commit 作者為 GitHub noreply 信箱
+- gh 已登入 Ryan970714，但 token 只有 gist / read:org / repo，推送 workflow 檔需要 `workflow` 權限
 
 ## Current File
-`src/DeskFolders/{Tray,Settings,Shell}/*`、`src/DeskFolders/Folders/ItemImporter.cs`
+`.github/workflows/*`、`README*.md`、`LICENSE`、`src/DeskFolders/Properties/PublishProfiles/win-x64.pubxml`
 
 ## Next Step
-使用者驗證通過後開始階段 7（GitHub Actions CI、self-contained 打包、README 含 SmartScreen 說明、LICENSE MIT）。開始前確認 GitHub repo 名稱 / 公開或私人、發布方式。
+1. 使用者執行 `gh auth refresh -h github.com -s workflow`
+2. `gh repo create Ryan970714/DeskFolders --public --source . --remote origin --push`
+3. 確認 CI 通過
+4. 是否推 `v0.1.0` tag 發布第一個 Release（使用者決定）
 
 ## Blocking Issues
-無。
+gh token 缺 `workflow` 權限（需使用者在瀏覽器授權）。
 
 ## Last Update
 2026-10-25

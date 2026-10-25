@@ -10,6 +10,13 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- Regenerate with tools/make-icon.ps1. -->
     <ApplicationIcon>Assets\DeskFolders.ico</ApplicationIcon>
+
+    <!-- Release builds override Version from the git tag (see .github/workflows/release.yml). -->
+    <Version>0.1.0</Version>
+    <Product>DeskFolders</Product>
+    <Authors>Ryan Kuo</Authors>
+    <Copyright>Copyright (c) 2026 Ryan Kuo</Copyright>
+    <Description>Phone-style folders on the Windows desktop.</Description>
   </PropertyGroup>
 
   <ItemGroup>

@@ -7,7 +7,12 @@
   - `DesktopSurface`：layered 子視窗 HwndSource，可重建並沿用 WPF content
   - `DesktopHost`：Lost 事件 + 每秒重試 + `TaskbarCreated` 監聽，自動重掛
   - 專案 context 文件（CLAUDE.md、AGENTS.md、context/）
-- 階段 6：拖放加入、TrayApp、開機自啟（待驗證）
+- 階段 7：CI、打包、README、LICENSE（本機完成，待推上 GitHub）
+  - `win-x64.pubxml`：self-contained 單一 exe（62 MB）
+  - `ci.yml`（build / test / publish artifact）、`release.yml`（v* tag → Release + sha256）
+  - `README.md` + `README.zh-TW.md`（含 SmartScreen 與 SHA256 說明）、MIT `LICENSE`
+  - csproj 版本與版權資訊
+- 階段 6：拖放加入、TrayApp、開機自啟（使用者驗證通過）
   - `ItemImporter`：拖放規則（exe/檔案/資料夾 → 捷徑、桌面捷徑 → 依模式、其他捷徑 → 複製）、同名編號
   - `ShortcutFile`（IShellLinkW）；`Shell/` 集中 Shell 互通
   - `TrayIcon`（Shell_NotifyIcon + 原生選單）、`AutoStart`（Run 機碼 + 工作管理員旗標）、單一執行個體
@@ -42,13 +47,13 @@
   - `SpikeTile` 顯示掃描結果供手動驗證
 
 ## In Progress
-- 階段 6 使用者驗證
+- 階段 7：推上 GitHub、確認 CI、使用者驗證
 
 ## Pending
-- 階段 7（見 `CLAUDE.md`「開發階段與進度」）
+- MVP 後的改進（見 `todo.md`）
 
 ## Completion %
-約 86%（6 / 7 階段）
+約 95%（7 / 7 階段實作完成，待推送與驗證）
 
 ## Milestones
 - 2026-10-24：階段 1 完成並驗證通過
@@ -56,7 +61,8 @@
 - 2026-10-24：階段 3 完成並驗證通過
 - 2026-10-24：階段 4 完成並驗證通過
 - 2026-10-25：階段 5 完成並驗證通過
-- 2026-10-25：階段 6 完成（待驗證）
+- 2026-10-25：階段 6 完成並驗證通過
+- 2026-10-25：階段 7 本機完成
 
 ## Last Update
 2026-10-24

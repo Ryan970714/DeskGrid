@@ -20,6 +20,8 @@ C# + WPF、.NET 10 LTS、x64、CsWin32、xUnit v3、self-contained 單一 exe。
 DeskFolders.slnx          solution
 Directory.Build.props     shared settings (nullable, x64, warnings as errors)
 global.json               SDK 10.0.x (rollForward latestFeature)
+.github/workflows/        ci.yml (build/test/publish), release.yml (v* tag → GitHub Release)
+README.md, README.zh-TW.md, LICENSE (MIT)
 src/DeskFolders/
   DeskFolders.csproj
   app.manifest            PerMonitorV2, asInvoker
@@ -50,10 +52,10 @@ DesktopHost（`Desktop/`）、ConfigStore（`Config/`）、FolderScanner + Widge
 見 `AGENTS.md`.
 
 ## Current Milestone
-階段 6：拖放加入、TrayApp、開機自啟。
+階段 7：CI、打包、README、LICENSE（MVP 最後一個階段）。
 
 ## Current Status
-階段 1–5 使用者驗證通過。階段 6 完成，72 個測試通過；實機驗證系統匣選單、設定、新增資料夾、開機自啟切換、單一執行個體、OLE 拖放（WPF 來源）；**從檔案總管桌面拖圖示到 widget 尚未實機驗證**，待使用者手動驗證。
+階段 1–6 使用者驗證通過。階段 7 完成於本機：單一 exe 打包並實際執行成功、CI 與 Release workflow、README（en / zh-TW）、MIT LICENSE；待推上公開 repo `Ryan970714/DeskFolders` 並確認 CI 通過。
 
 ## Known Issues
 - 舊版桌面階層（Win10 / Win11 ≤ 23H2）程式路徑尚未實機測試。
