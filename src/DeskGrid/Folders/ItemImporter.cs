@@ -17,12 +17,13 @@ internal enum ImportAction
 /// <summary>
 /// Adds files and folders dropped on a widget to its folder. Programs, ordinary files and folders get a
 /// new shortcut (a program itself is never moved or copied); shortcuts lying on the desktop are moved or
-/// copied per <see cref="DropMode"/>; shortcuts from anywhere else are copied.
+/// copied per <see cref="DropMode"/>; shortcuts from anywhere else are copied; items taken out of another
+/// widget's panel are moved.
 /// </summary>
 internal static class ItemImporter
 {
     /// <summary>What dropping <paramref name="path"/> on the widget for <paramref name="widgetFolder"/> does.</summary>
-    public static ImportAction Plan(string path, string widgetFolder, DropMode mode, IEnumerable<string> desktops)
+    public static ImportAction Plan(string path, string widgetFolder, DropMode mode, IEnumerable<string> desktops, string rootFolder)
     {
         if (FolderPaths.IsDirectlyIn(path, widgetFolder) || FolderPaths.IsSameOrInside(widgetFolder, path))
         {
@@ -40,6 +41,12 @@ internal static class ItemImporter
             return ImportAction.None;
         }
 
+        if (FolderPaths.IsSameOrInside(path, rootFolder))
+        {
+            // Dragged out of another widget (see PopupPanel): it moves, whatever it is.
+            return ImportAction.Move;
+        }
+
         if (!IsShortcut(path))
         {
             return ImportAction.CreateShortcut;
@@ -50,12 +57,18 @@ internal static class ItemImporter
     }
 
     /// <summary>Carries out <see cref="Plan"/> for each path. Returns how many items were added.</summary>
-    public static int Import(IEnumerable<string> paths, string widgetFolder, DropMode mode, IEnumerable<string> desktops)
+    public static int Import(
+        IEnumerable<string> paths, string widgetFolder, DropMode mode, IEnumerable<string> desktops, string rootFolder) =>
+        ImportTo(paths, widgetFolder, mode, desktops, rootFolder).Count;
+
+    /// <summary>Like <see cref="Import"/>, but returns the path of every item that was added.</summary>
+    public static List<string> ImportTo(
+        IEnumerable<string> paths, string widgetFolder, DropMode mode, IEnumerable<string> desktops, string rootFolder)
     {
-        var added = 0;
+        var added = new List<string>();
         foreach (var path in paths)
         {
-            var action = Plan(path, widgetFolder, mode, desktops);
+            var action = Plan(path, widgetFolder, mode, desktops, rootFolder);
             if (action == ImportAction.None)
             {
                 continue;
@@ -63,8 +76,7 @@ internal static class ItemImporter
 
             try
             {
-                Apply(action, path, widgetFolder);
-                added++;
+                added.Add(Apply(action, path, widgetFolder));
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or COMException)
             {
@@ -87,19 +99,21 @@ internal static class ItemImporter
         return candidate;
     }
 
-    private static void Apply(ImportAction action, string path, string widgetFolder)
+    // Returns the path of the new item.
+    private static string Apply(ImportAction action, string path, string widgetFolder)
     {
         if (action == ImportAction.CreateShortcut)
         {
-            ShortcutFile.Create(UniquePath(widgetFolder, ShortcutName(path)), path);
-            return;
+            var shortcut = UniquePath(widgetFolder, ShortcutName(path));
+            ShortcutFile.Create(shortcut, path);
+            return shortcut;
         }
 
         var destination = UniquePath(widgetFolder, Path.GetFileName(path));
         if (action == ImportAction.Copy)
         {
             File.Copy(path, destination);
-            return;
+            return destination;
         }
 
         try
@@ -112,6 +126,8 @@ internal static class ItemImporter
             Log.Info($"No permission to move {path}; copied it instead.");
             File.Copy(path, destination);
         }
+
+        return destination;
     }
 
     // "notepad.exe" -> "notepad.lnk", "report.pdf" -> "report.pdf.lnk", "D:\Photos" -> "Photos.lnk", "D:\" -> "D.lnk".

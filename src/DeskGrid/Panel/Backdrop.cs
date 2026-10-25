@@ -26,8 +26,21 @@ internal static class Backdrop
         int darkMode = dark ? 1 : 0;
         var corners = (int)DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND;
         var backdrop = (int)DWM_SYSTEMBACKDROP_TYPE.DWMSBT_TRANSIENTWINDOW;
+        // No fade or zoom when the window appears or goes away: with a backdrop that animation reads as a stutter.
+        int noTransitions = 1;
+        PInvoke.DwmSetWindowAttribute(window, DWMWINDOWATTRIBUTE.DWMWA_TRANSITIONS_FORCEDISABLED, &noTransitions, sizeof(int));
         PInvoke.DwmSetWindowAttribute(window, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(int));
         PInvoke.DwmSetWindowAttribute(window, DWMWINDOWATTRIBUTE.DWMWA_WINDOW_CORNER_PREFERENCE, &corners, sizeof(int));
         return PInvoke.DwmSetWindowAttribute(window, DWMWINDOWATTRIBUTE.DWMWA_SYSTEMBACKDROP_TYPE, &backdrop, sizeof(int)).Succeeded;
+    }
+
+    /// <summary>
+    /// Hides or shows the window without the Shell knowing, so it can be shown the instant its content and
+    /// backdrop are ready instead of appearing half drawn.
+    /// </summary>
+    public static unsafe void SetCloaked(HWND window, bool cloaked)
+    {
+        int value = cloaked ? 1 : 0;
+        PInvoke.DwmSetWindowAttribute(window, DWMWINDOWATTRIBUTE.DWMWA_CLOAK, &value, sizeof(int));
     }
 }

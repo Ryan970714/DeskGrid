@@ -27,6 +27,7 @@
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
 
       <TextBlock x:Name="RootLabel" Style="{StaticResource Label}" />
@@ -39,7 +40,7 @@
       <ComboBox x:Name="ColumnsBox" Grid.Row="1" Grid.Column="1" Width="80" Margin="0,0,0,16" HorizontalAlignment="Left" />
 
       <TextBlock x:Name="DropModeLabel" Grid.Row="2" Style="{StaticResource Label}" TextWrapping="Wrap" MaxWidth="160" />
-      <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,3,0,10" Orientation="Horizontal">
+      <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,3,0,10">
         <RadioButton x:Name="DropMove" GroupName="DropMode" />
         <RadioButton x:Name="DropCopy" GroupName="DropMode" />
       </StackPanel>
@@ -63,6 +64,13 @@
                        Text="{Binding Value, ElementName=OpacitySlider, StringFormat={}{0:P0}}" />
           </StackPanel>
         </StackPanel>
+      </StackPanel>
+
+      <TextBlock x:Name="VersionLabel" Grid.Row="4" Margin="0,16,16,0" Style="{StaticResource Label}" />
+      <StackPanel Grid.Row="4" Grid.Column="1" Margin="0,16,0,0" Orientation="Horizontal">
+        <TextBlock x:Name="VersionText" VerticalAlignment="Center" />
+        <Button x:Name="CheckUpdatesButton" MinWidth="80" Margin="12,0,0,0" Padding="10,2" Click="OnCheckUpdates" />
+        <TextBlock x:Name="UpdateStatus" Margin="12,0,0,0" VerticalAlignment="Center" Opacity="0.75" />
       </StackPanel>
     </Grid>
 

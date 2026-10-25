@@ -49,6 +49,16 @@ internal sealed class DesktopHost : IDisposable
         surface.Dispose();
     }
 
+    /// <summary>The desktop's own icon grid, or <see langword="null"/> if it can't be read right now.</summary>
+    public DesktopIconGrid? ReadIconGrid()
+    {
+        var grid = _layer is { } layer && PInvoke.IsWindow(layer.Handle) ? DesktopIconGrid.Read(layer) : null;
+        Log.Info(grid is null
+            ? "Desktop icon grid unavailable; widgets use their own grid."
+            : $"Desktop icon grid: cell {grid.CellWidth}x{grid.CellHeight} px, {grid.Icons.Count} icon(s).");
+        return grid;
+    }
+
     public void Start()
     {
         _shellEventsWindow = ShellMessageWindow.Create("DeskGrid.ShellEvents", ShellEventsHook);

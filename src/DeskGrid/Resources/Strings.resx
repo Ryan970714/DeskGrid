@@ -64,13 +64,13 @@
     <value>Panel columns</value>
   </data>
   <data name="SettingsDropCopy" xml:space="preserve">
-    <value>Copy</value>
+    <value>Keep original on desktop (copy)</value>
   </data>
   <data name="SettingsDropMode" xml:space="preserve">
     <value>Desktop shortcuts dropped on a widget</value>
   </data>
   <data name="SettingsDropMove" xml:space="preserve">
-    <value>Move</value>
+    <value>Remove from desktop (move)</value>
   </data>
   <data name="SettingsOpacity" xml:space="preserve">
     <value>Opacity</value>
@@ -112,5 +112,72 @@ Using the default root folder instead:
   </data>
   <data name="RootFolderNotAbsolute" xml:space="preserve">
     <value>it is not a full path.</value>
+  </data>
+  <data name="WidgetPinToTaskbar" xml:space="preserve">
+    <value>Pin to taskbar…</value>
+  </data>
+  <data name="PinCreated" xml:space="preserve">
+    <value>A shortcut for "{0}" was created and is selected in Explorer.&#10;&#10;Drag it onto the taskbar, or right-click it, choose Show more options, then Pin to taskbar.</value>
+  </data>
+  <data name="PinFailed" xml:space="preserve">
+    <value>Could not create the shortcut: {0}</value>
+  </data>
+  <data name="PanelRename" xml:space="preserve">
+    <value>Rename folder</value>
+  </data>
+  <data name="RenameFailed" xml:space="preserve">
+    <value>Could not rename the folder: {0}</value>
+  </data>
+  <data name="UpdateTitle" xml:space="preserve">
+    <value>DeskGrid update</value>
+  </data>
+  <data name="UpdateAvailable" xml:space="preserve">
+    <value>DeskGrid {0} is available. You are using {1}.</value>
+    <comment>{0} = new version, {1} = current version</comment>
+  </data>
+  <data name="UpdateHint" xml:space="preserve">
+    <value>Update: download the new version and restart DeskGrid with it.&#10;Keep this version: change nothing and stop asking about this release.&#10;Cancel: not now; ask again the next time DeskGrid starts.</value>
+  </data>
+  <data name="UpdateButtonUpdate" xml:space="preserve">
+    <value>Update</value>
+  </data>
+  <data name="UpdateButtonKeep" xml:space="preserve">
+    <value>Keep</value>
+  </data>
+  <data name="UpdateButtonLater" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="UpdateDownloading" xml:space="preserve">
+    <value>Downloading…</value>
+  </data>
+  <data name="UpdateFailed" xml:space="preserve">
+    <value>The update failed: {0}</value>
+  </data>
+  <data name="UpdateNoFile" xml:space="preserve">
+    <value>the release has no installable file or checksum.</value>
+  </data>
+  <data name="UpdateChecksumMismatch" xml:space="preserve">
+    <value>the downloaded file does not match its checksum.</value>
+  </data>
+  <data name="UpdateFolderNotWritable" xml:space="preserve">
+    <value>the folder DeskGrid is installed in cannot be written to. Download the new version from the release page instead.</value>
+  </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="SettingsCheckUpdates" xml:space="preserve">
+    <value>Check for updates</value>
+  </data>
+  <data name="SettingsChecking" xml:space="preserve">
+    <value>Checking…</value>
+  </data>
+  <data name="SettingsUpToDate" xml:space="preserve">
+    <value>You are on the latest version.</value>
+  </data>
+  <data name="SettingsCheckFailed" xml:space="preserve">
+    <value>Could not check for updates.</value>
+  </data>
+  <data name="SettingsUpdateAvailable" xml:space="preserve">
+    <value>Version {0} is available.</value>
   </data>
 </root>

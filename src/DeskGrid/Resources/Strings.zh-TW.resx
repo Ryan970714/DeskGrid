@@ -61,13 +61,13 @@
     <value>面板欄數</value>
   </data>
   <data name="SettingsDropCopy" xml:space="preserve">
-    <value>複製</value>
+    <value>桌面同時保留（複製）</value>
   </data>
   <data name="SettingsDropMode" xml:space="preserve">
-    <value>從桌面拖到 widget 的捷徑</value>
+    <value>桌面捷徑拖入 widget 後</value>
   </data>
   <data name="SettingsDropMove" xml:space="preserve">
-    <value>移動</value>
+    <value>只留在 DeskGrid（移動）</value>
   </data>
   <data name="SettingsOpacity" xml:space="preserve">
     <value>不透明度</value>
@@ -107,5 +107,71 @@
   </data>
   <data name="RootFolderNotAbsolute" xml:space="preserve">
     <value>不是完整路徑。</value>
+  </data>
+  <data name="WidgetPinToTaskbar" xml:space="preserve">
+    <value>釘選到工作列…</value>
+  </data>
+  <data name="PinCreated" xml:space="preserve">
+    <value>已建立「{0}」的捷徑，並在檔案總管中選取。&#10;&#10;請把它拖到工作列上，或按右鍵 → 顯示更多選項 → 釘選到工作列。</value>
+  </data>
+  <data name="PinFailed" xml:space="preserve">
+    <value>無法建立捷徑：{0}</value>
+  </data>
+  <data name="PanelRename" xml:space="preserve">
+    <value>重新命名資料夾</value>
+  </data>
+  <data name="RenameFailed" xml:space="preserve">
+    <value>無法重新命名：{0}</value>
+  </data>
+  <data name="UpdateTitle" xml:space="preserve">
+    <value>DeskGrid 更新</value>
+  </data>
+  <data name="UpdateAvailable" xml:space="preserve">
+    <value>有新版本 DeskGrid {0}，目前版本為 {1}。</value>
+  </data>
+  <data name="UpdateHint" xml:space="preserve">
+    <value>更新：下載新版本並以新版本重新啟動 DeskGrid。&#10;維持：不做任何變更，且不再提醒這個版本。&#10;取消：這次先不處理，下次開機或重新啟動 DeskGrid 時再提醒。</value>
+  </data>
+  <data name="UpdateButtonUpdate" xml:space="preserve">
+    <value>更新</value>
+  </data>
+  <data name="UpdateButtonKeep" xml:space="preserve">
+    <value>維持</value>
+  </data>
+  <data name="UpdateButtonLater" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="UpdateDownloading" xml:space="preserve">
+    <value>下載中…</value>
+  </data>
+  <data name="UpdateFailed" xml:space="preserve">
+    <value>更新失敗：{0}</value>
+  </data>
+  <data name="UpdateNoFile" xml:space="preserve">
+    <value>這個版本沒有可安裝的檔案或校驗碼。</value>
+  </data>
+  <data name="UpdateChecksumMismatch" xml:space="preserve">
+    <value>下載的檔案與校驗碼不符。</value>
+  </data>
+  <data name="UpdateFolderNotWritable" xml:space="preserve">
+    <value>DeskGrid 所在的資料夾無法寫入，請改從發布頁下載新版本。</value>
+  </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>版本</value>
+  </data>
+  <data name="SettingsCheckUpdates" xml:space="preserve">
+    <value>檢查更新</value>
+  </data>
+  <data name="SettingsChecking" xml:space="preserve">
+    <value>檢查中…</value>
+  </data>
+  <data name="SettingsUpToDate" xml:space="preserve">
+    <value>已是最新版本。</value>
+  </data>
+  <data name="SettingsCheckFailed" xml:space="preserve">
+    <value>無法檢查更新。</value>
+  </data>
+  <data name="SettingsUpdateAvailable" xml:space="preserve">
+    <value>有新版本 {0}。</value>
   </data>
 </root>

@@ -4,6 +4,7 @@ using DeskGrid.Config;
 using DeskGrid.Folders;
 using DeskGrid.Panel;
 using DeskGrid.Resources;
+using DeskGrid.Updates;
 using Microsoft.Win32;
 
 namespace DeskGrid.Settings;
@@ -37,6 +38,28 @@ internal partial class SettingsWindow : Window
 
     public event EventHandler<SettingsChoice>? Applied;
 
+    /// <summary>Checks for a newer release (showing the update dialog if there is one); returns what to tell the user, if anything.</summary>
+    public Func<Task<string>>? CheckForUpdates { get; set; }
+
+    private async void OnCheckUpdates(object sender, RoutedEventArgs e)
+    {
+        if (CheckForUpdates is not { } check)
+        {
+            return;
+        }
+
+        CheckUpdatesButton.IsEnabled = false;
+        UpdateStatus.Text = Strings.SettingsChecking;
+        try
+        {
+            UpdateStatus.Text = await check();
+        }
+        finally
+        {
+            CheckUpdatesButton.IsEnabled = true;
+        }
+    }
+
     private PanelBackgroundStyle SelectedBackground =>
         Enum.GetValues<PanelBackgroundStyle>().First(style => BackgroundRadio(style).IsChecked == true);
 
@@ -64,6 +87,9 @@ internal partial class SettingsWindow : Window
         BackgroundCustom.Content = Strings.SettingsBackgroundCustom;
         ColorButton.Content = Strings.SettingsColor;
         OpacityLabel.Text = Strings.SettingsOpacity;
+        VersionLabel.Text = Strings.SettingsVersion;
+        VersionText.Text = UpdateChecker.CurrentVersion.ToString(3);
+        CheckUpdatesButton.Content = Strings.SettingsCheckUpdates;
         OkButton.Content = Strings.ButtonOk;
         CancelButton.Content = Strings.ButtonCancel;
     }

@@ -52,6 +52,42 @@ public sealed class WidgetGridTests
         Assert.Equal(new ScreenPoint(50, 0), grid.NearestFree(new ScreenPoint(0, 0), Taken()));
     }
 
+    [Fact]
+    public void Anchor_AlignsCellsToTheIconLattice()
+    {
+        // Icons start 7 px right of and 30 px below the work area's corner, so cells do too.
+        var grid = new WidgetGrid(new ScreenRect(0, 0, 1000, 700), 100, 200, new ScreenPoint(307, 430));
+
+        Assert.Equal(new ScreenPoint(807, 30), grid.FirstFree(Taken()));
+        Assert.Equal(new ScreenPoint(507, 230), grid.NearestFree(new ScreenPoint(512, 250), Taken()));
+    }
+
+    [Fact]
+    public void Obstacles_AreSkipped()
+    {
+        // An icon sits on the top-right cell and half-covers the one below it.
+        var grid = new WidgetGrid(new ScreenRect(0, 0, 1000, 700), 100, 200, null, [new ScreenRect(900, 0, 1000, 300)]);
+
+        Assert.Equal(new ScreenPoint(900, 400), grid.FirstFree(Taken()));
+        Assert.Equal(new ScreenPoint(800, 0), grid.NearestFree(new ScreenPoint(900, 0), Taken()));
+    }
+
+    [Fact]
+    public void Obstacles_BarelyTouchingACell_DoNotBlockIt()
+    {
+        var grid = new WidgetGrid(new ScreenRect(0, 0, 1000, 700), 100, 200, null, [new ScreenRect(900, 0, 1000, 210)]);
+
+        Assert.Equal(new ScreenPoint(900, 200), grid.FirstFree(Taken((900, 0))));
+    }
+
+    [Fact]
+    public void Obstacles_EverywhereButTakenCells_StillGivesACell()
+    {
+        var grid = new WidgetGrid(new ScreenRect(0, 0, 200, 200), 100, 200, null, [new ScreenRect(0, 0, 200, 200)]);
+
+        Assert.Equal(new ScreenPoint(100, 0), grid.FirstFree(Taken()));
+    }
+
     private static HashSet<ScreenPoint> Taken(params (int X, int Y)[] cells) =>
         [.. cells.Select(c => new ScreenPoint(c.X, c.Y))];
 }

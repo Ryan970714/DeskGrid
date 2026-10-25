@@ -36,6 +36,10 @@ internal static class ShellItem
         }
     }
 
+    /// <summary>Shows <paramref name="path"/> selected in an Explorer window.</summary>
+    public static void Reveal(string path) =>
+        Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true })?.Dispose();
+
     /// <summary>The name Explorer shows (e.g. "Google Chrome" for "Google Chrome.lnk").</summary>
     public static unsafe string GetDisplayName(string path)
     {

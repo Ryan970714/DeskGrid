@@ -18,6 +18,8 @@ public sealed class ItemImporterTests : IDisposable
 
     private string[] Desktops => [Desktop];
 
+    private string Root => _temp.Combine("root");
+
     public void Dispose()
     {
         _sta.Dispose();
@@ -33,11 +35,13 @@ public sealed class ItemImporterTests : IDisposable
     [InlineData(@"desktop\tool.exe", "move", "CreateShortcut")]
     [InlineData(@"elsewhere\report.pdf", "move", "CreateShortcut")]
     [InlineData(@"root\Dev\Chrome.lnk", "move", "None")]
+    [InlineData(@"root\Other\Chrome.lnk", "copy", "Move")]
+    [InlineData(@"root\Other\report.pdf", "copy", "Move")]
     public void Plan_FollowsTheDropRules(string relativePath, string mode, string expected)
     {
         var path = _temp.CreateFile(relativePath);
 
-        var action = ItemImporter.Plan(path, Widget, Enum.Parse<DropMode>(mode, ignoreCase: true), Desktops);
+        var action = ItemImporter.Plan(path, Widget, Enum.Parse<DropMode>(mode, ignoreCase: true), Desktops, Root);
 
         Assert.Equal(Enum.Parse<ImportAction>(expected), action);
     }
@@ -47,10 +51,10 @@ public sealed class ItemImporterTests : IDisposable
     {
         var other = Directory.CreateDirectory(_temp.Combine("Photos")).FullName;
 
-        Assert.Equal(ImportAction.CreateShortcut, ItemImporter.Plan(other, Widget, DropMode.Move, Desktops));
-        Assert.Equal(ImportAction.None, ItemImporter.Plan(Widget, Widget, DropMode.Move, Desktops));
-        Assert.Equal(ImportAction.None, ItemImporter.Plan(_temp.Combine("root"), Widget, DropMode.Move, Desktops));
-        Assert.Equal(ImportAction.None, ItemImporter.Plan(_temp.Combine("missing.txt"), Widget, DropMode.Move, Desktops));
+        Assert.Equal(ImportAction.CreateShortcut, ItemImporter.Plan(other, Widget, DropMode.Move, Desktops, Root));
+        Assert.Equal(ImportAction.None, ItemImporter.Plan(Widget, Widget, DropMode.Move, Desktops, Root));
+        Assert.Equal(ImportAction.None, ItemImporter.Plan(_temp.Combine("root"), Widget, DropMode.Move, Desktops, Root));
+        Assert.Equal(ImportAction.None, ItemImporter.Plan(_temp.Combine("missing.txt"), Widget, DropMode.Move, Desktops, Root));
     }
 
     [Fact]
@@ -61,7 +65,7 @@ public sealed class ItemImporterTests : IDisposable
         var program = _temp.CreateFile(@"elsewhere\tool.exe");
 
         var added = await _sta.InvokeAsync(() =>
-            ItemImporter.Import([desktopShortcut, otherShortcut, program], Widget, DropMode.Move, Desktops));
+            ItemImporter.Import([desktopShortcut, otherShortcut, program], Widget, DropMode.Move, Desktops, Root));
 
         Assert.Equal(3, added);
         Assert.False(File.Exists(desktopShortcut));
@@ -78,9 +82,21 @@ public sealed class ItemImporterTests : IDisposable
         _temp.CreateFile(@"root\Dev\report.pdf.lnk");
         var document = _temp.CreateFile(@"elsewhere\report.pdf");
 
-        await _sta.InvokeAsync(() => ItemImporter.Import([document], Widget, DropMode.Move, Desktops));
+        await _sta.InvokeAsync(() => ItemImporter.Import([document], Widget, DropMode.Move, Desktops, Root));
 
         Assert.Equal(document, ShortcutTarget(Path.Combine(Widget, "report.pdf (2).lnk")), ignoreCase: true);
+    }
+
+    [Fact]
+    public async Task ImportTo_ReturnsThePathsOfTheNewItems()
+    {
+        _temp.CreateFile(@"root\Dev\report.pdf.lnk");
+        var document = _temp.CreateFile(@"elsewhere\report.pdf");
+        var ignored = _temp.CreateFile(@"root\Dev\inside.txt");
+
+        var added = await _sta.InvokeAsync(() => ItemImporter.ImportTo([document, ignored], Widget, DropMode.Move, Desktops, Root));
+
+        Assert.Equal([Path.Combine(Widget, "report.pdf (2).lnk")], added);
     }
 
     [Fact]

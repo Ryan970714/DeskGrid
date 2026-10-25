@@ -5,6 +5,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using DeskGrid.Desktop;
 using DeskGrid.Diagnostics;
+using DeskGrid.Resources;
 using Windows.Win32;
 using Windows.Win32.UI.WindowsAndMessaging;
 
@@ -37,6 +38,10 @@ internal partial class FolderWidget : UserControl
 
         // The owner decides what a drop means; the widget only shows that it is a target.
         AllowDrop = true;
+
+        var pin = new MenuItem { Header = Strings.WidgetPinToTaskbar };
+        pin.Click += (_, _) => PinRequested?.Invoke(this, EventArgs.Empty);
+        ContextMenu = new ContextMenu { Items = { pin } };
     }
 
     public event EventHandler? Clicked;
@@ -47,6 +52,11 @@ internal partial class FolderWidget : UserControl
     public event EventHandler<ScreenPoint>? Dragged;
 
     public event EventHandler? DragCompleted;
+
+    public event EventHandler? PinRequested;
+
+    /// <summary>Sets the cell the widget fills (DIP); the content stays centered in it.</summary>
+    public void SetCellSize(double width, double height) => (Width, Height) = (width, height);
 
     public void Show(string name, Task<BitmapSource> preview)
     {

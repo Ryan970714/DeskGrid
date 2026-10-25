@@ -31,7 +31,7 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 - 測試：`dotnet test DeskGrid.slnx`（xUnit v3，`tests/DeskGrid.Tests/`）
 - 執行：`src/DeskGrid/bin/Debug/net10.0-windows/win-x64/DeskGrid.exe`
 - 打包：`dotnet publish src/DeskGrid/DeskGrid.csproj -p:PublishProfile=win-x64` → `artifacts/publish/DeskGrid.exe`（self-contained 單一 exe，約 62 MB）
-- 發布：推送 `v*` tag（例如 `v0.1.0`）→ GitHub Actions 建 Release，附 exe 與 `.sha256`
+- 發布：推送 `v*` tag（例如 `v0.1.0`）→ GitHub Actions 建 Release，只附單一 exe（SHA-256 由 GitHub 在資產上顯示，更新程式讀 API 的 `digest`）
 - Log：`%LOCALAPPDATA%\DeskGrid\deskgrid.log`；Config：`%APPDATA%\DeskGrid\config.json`
 
 # 架構
@@ -48,6 +48,8 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 | PopupPanel | `Panel/` | 格子面板（預設 3 欄，超過可捲動，不分頁）；點項目用 ShellExecute 啟動；點外部 / Esc / 失焦收合 |
 | TrayApp | `Tray/`、`Settings/` | 系統匣選單：新增資料夾、開啟根目錄、設定、開機自啟開關、結束（`TrayIcon`、`AutoStart`；設定視窗與新增資料夾對話框在 `Settings/`） |
 | 拖放加入 | `Folders/ItemImporter` | 拖到 widget 的檔案依規則建捷徑 / 移動 / 複製 |
+| 工作列釘選 | `Taskbar/` | widget 右鍵「釘選到工作列」：建 `--open "資料夾"` 捷徑讓使用者自己釘；點下去由命名管線（`InstanceChannel`）通知執行中的 DeskGrid 在游標處開面板 |
+| 版本檢查 | `Updates/` | 啟動後 8 秒與設定視窗的「檢查更新」按鈕：查 GitHub 最新 release，有新版本彈出「更新 / 維持 / 取消」；更新 = 下載 exe、驗 SHA256、由 PowerShell 小腳本在程式結束後換檔並重啟 |
 | （輔助）Shell | `Shell/` | Shell 互通：`ShellImage`（圖示）、`ShellItem`（ShellExecute 開啟、顯示名稱）、`ShortcutFile`（建 .lnk） |
 | （輔助）Log | `Diagnostics/` | 簡易 append-only log |
 | （輔助）DispatcherThread | `Threading/` | 獨立 STA 執行緒上的 WPF Dispatcher（Shell / WPF 影像用；測試也拿來當 UI 執行緒） |
@@ -86,7 +88,8 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 ## Widgets 實作要點（階段 4）
 
 - **外觀**（使用者選定）：48 DIP 淺色半透明圓角方塊（白 30%、圓角 22.37%）內放預覽，下方名稱用系統圖示字型、白字陰影、最多 2 行；滑鼠移上時整格淡白高亮（像原生圖示）。
-- **格子**：一格 = widget 佔位 76×96 DIP（依所在螢幕 DPI 換算成實體像素），從**工作區右上角**起算、每欄由上往下填、滿了往左開新欄。每個 widget 都在格子上，且一格一個。
+- **格子**：一格 = 桌面原生圖示格（`DesktopIconGrid` 對 Explorer 的 `SysListView32` 送 `LVM_GETITEMSPACING` / `LVM_GETITEMPOSITION`，位置要跨行程讀取，所以用 `VirtualAllocEx` + `ReadProcessMemory`）；widget 一格就是一個原生圖示格大小（不取整數倍，否則高 DPI 下 76×96 DIP 會比 150×182 px 的圖示格大一點而變兩倍大）。格線以第一個原生圖示的格為錨點，所以與桌面圖示對齊；每欄由上往下填、從右往左。讀不到時退回舊行為（工作區右上角起算、76×96 DIP）。每個 widget 都在格子上，且一格一個。
+- **避開原生圖示**：與原生圖示格重疊超過 1/4 的格不使用（`WidgetGrid` 的 obstacles），除非已無其他格。只在擺放 / 放開拖曳時檢查；之後使用者把圖示拖到 widget 上無法阻止。
 - **擺放**：有存位置 → 吸到最近的空格；沒存過 → 主螢幕第一個空格（先處理有存位置的，新 widget 才不會佔掉它們的格）。結果寫回 config（沒變就不寫）。
 - **拖曳**：`FolderWidget` 只把滑鼠轉成 Clicked / DragStarted / Dragged(游標位移, 實體像素) / DragCompleted，超過系統 `SM_CXDRAG` 才算拖。拖曳中自由跟隨游標；放開後吸到最近空格（目標格有人 → 次近空格）並存檔。
 - **生命週期**：`WidgetBoard.Show` 依資料夾名稱比對：消失的移除、新的建立、既有的更新名稱與預覽。資料夾改名 = 舊 widget 移除、新 widget 在轉移過來的位置建立。
@@ -104,6 +107,10 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 - **啟動**：`Process.Start(UseShellExecute=true)`（即 ShellExecuteEx），工作目錄 = 項目所在資料夾（捷徑自己的工作目錄優先），`ErrorDialog=true` 讓 Windows 顯示自己的錯誤（例如捷徑目標不存在）；UAC 取消等例外只記 log。
 - **名稱**：項目名稱用 Shell 顯示名稱（`SIGDN_NORMALDISPLAY`，與檔案總管一致，`.lnk`/`.url` 不顯示副檔名、其他依使用者「隱藏副檔名」設定）。
 - Button 的佈景主題樣式會強制黑字，項目樣式要明確綁回視窗 `Foreground`。
+- **面板內拖曳**：項目拖超過系統拖曳距離即以 OLE `DoDragDrop`（`FileDrop` + 自訂格式 `DeskGrid.PanelItem` / `DeskGrid.PanelFolder`）開始。放回同一個面板 → 重排（`WidgetCatalog.MoveItem` 改 `ItemOrder`）；放到桌面 / 資料夾由對方處理（Explorer 移動檔案）；放到別的 widget → `ItemImporter` 對 root 底下的檔案一律「移動」。拖曳中面板失焦不收合，結束後若已離開才收。
+- **拖曳動畫**（iOS 式）：`DragGhost` 是不接輸入的置頂分層視窗，載著圖示跟游標（每次 `QueryContinueDrag` 更新位置、被新開的面板蓋住時重新置頂）；原格留空（容器 `Opacity=0`），其餘項目用 `TranslateTransform` 動畫滑到新格（`PopupPanel.Slide`）。拖離面板時缺口合起來；放下後影子飛到格子，被別處接走則縮小淡出。拖曳事件的 `DragLeave` 會從子元素冒上來，要以游標是否真的離開視窗判斷。
+- **拖到 widget 自動開面板**：`WidgetBoard` 的 widget 上拖曳停 550 ms（且該拖曳可放入）→ `DragHovered` → `PanelController.OpenForDrag`（不啟用）。原面板只 `HideForDrag`（DWM cloak），拖曳結束才關，因為 `DoDragDrop` 在它裡面跑。放進開著的面板：`ItemsDropped` → `ItemImporter.ImportTo` → `WidgetCatalog.PlaceNewItem`（先重掃才能指定位置）；放入前該面板先開缺口。
+- **標題改名**：面板標題滑過顯示鉛筆（Segoe MDL2 `E70F`），點擊變輸入框；Enter / 失焦確認、Esc 取消。`App.RenameFolder` 驗證（`WidgetFolderName.Validate`）後 `Directory.Move`；只差大小寫時經暫存名稱（`Directory.Move` 拒絕同名）；成功後面板先把自己的 `Folder` 改成新名，免得緊接的重掃找不到而關閉。
 
 ## 拖放 / Tray / 設定 實作要點（階段 6）
 
@@ -117,12 +124,18 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 - **XAML 不可引用本組件型別**（例如 `x:Static` 到 `Strings`）：`Strings` 在 build 時才產生在 `obj/`，WPF 的暫時標記組件編譯不到。介面文字在 code-behind 設定。
 - **App 圖示**：`tools/make-icon.ps1` 產生 `src/DeskGrid/Assets/DeskGrid.ico`（多尺寸 PNG ICO）。
 
+## 版本檢查與更新
+
+- **來源**：`https://api.github.com/repos/Ryan970714/DeskGrid/releases/latest`（匿名，每小時 60 次上限夠用）；略過 draft / prerelease；tag 去掉 `v` 後與組件版本（csproj `<Version>`）比 major.minor.build。exe 資產用字尾 `-win-x64.exe` 找（舊 v0.1.0 資產叫 `DeskFolders-…`），校驗檔是 `<exe 名>.sha256`。
+- **三個選項**：更新（下載 → 驗 SHA256（取自 release 資產的 API `digest` 欄位）→ `apply-update.ps1` 等本程序結束後 `Move-Item` 蓋掉 exe 再啟動；只有發布的單檔 exe 做得到，`UpdateInstaller.CanReplaceSelf`，開發版與無法寫入的資料夾改開 release 頁）、維持（config `skippedUpdateVersion` 記下該 tag，自動檢查不再提醒，手動檢查仍會彈）、取消（什麼都不存，下次啟動再提醒）。
+- **觸發**：啟動後 8 秒自動檢查一次（網路失敗只記 log，不打擾）；設定視窗顯示目前版本與「檢查更新」按鈕，結果文字顯示在按鈕旁。
+
 ## 發布與 CI（階段 7）
 
 - **GitHub**：公開 repo `Ryan970714/DeskGrid`，預設分支 `main`，MIT（著作權人 Ryan Kuo）。README 英文（`README.md`）+ 繁中（`README.zh-TW.md`），內容需保持一致。
 - **打包**：`Properties/PublishProfiles/win-x64.pubxml`：self-contained、PublishSingleFile、`IncludeNativeLibrariesForSelfExtract`（WPF 原生 DLL 也包進 exe，首次執行解到 %TEMP%）、壓縮、無 pdb。WPF 不支援 trimming。`.gitignore` 範本會忽略 `*.pubxml`，已為這個 profile 加例外。
 - **CI**（`.github/workflows/ci.yml`）：push 到 main 與 PR → windows-latest、.NET 10.0.x → build、test、publish，exe 上傳為 artifact。
-- **Release**（`release.yml`）：推 `v*` tag → test → 以 tag 版本號 publish → `gh release create`，附 `DeskGrid-<版本>-win-x64.exe` 與 `.sha256`。csproj 的 `<Version>` 是本機建置的預設值。
+- **Release**（`release.yml`）：推 `v*` tag → test → 以 tag 版本號 publish → `gh release create`，只附 `DeskGrid-<版本>-win-x64.exe`。csproj 的 `<Version>` 是本機建置的預設值。
 - **未簽章**：README 說明 SmartScreen「其他資訊 → 仍要執行」與 SHA256 驗證。
 - 推送 `.github/workflows/` 需要 gh token 的 `workflow` 權限（`gh auth refresh -h github.com -s workflow`）。
 

@@ -3,6 +3,7 @@ using DeskGrid.Desktop;
 using DeskGrid.Folders;
 using DeskGrid.Icons;
 using DeskGrid.Shell;
+using Windows.Win32;
 
 namespace DeskGrid.Panel;
 
@@ -13,6 +14,15 @@ internal sealed class PanelController(ConfigStore configStore, IconService icons
     private const int MaxColumns = 8;
 
     private PopupPanel? _panel;
+
+    /// <summary>Raised when the user dragged an item to another place in its panel.</summary>
+    public event EventHandler<ItemReorderedEventArgs>? ItemReordered;
+
+    /// <summary>Raised when items from another place were dropped on the open panel.</summary>
+    public event EventHandler<ItemsDroppedEventArgs>? ItemsDropped;
+
+    /// <summary>Renames a widget folder (old name, new name); returns why not, or <see langword="null"/> on success.</summary>
+    public Func<string, string, string?>? FolderRenamer { get; set; }
 
     /// <summary>
     /// Opens <paramref name="folder"/>'s panel next to <paramref name="anchor"/>, or closes it if it is
@@ -27,25 +37,40 @@ internal sealed class PanelController(ConfigStore configStore, IconService icons
             return;
         }
 
-        var config = configStore.Config;
-        var theme = PanelTheme.Resolve(config.PanelBackground, PanelTheme.SystemUsesDarkTheme, Backdrop.IsAcrylicSupported);
-        var panel = new PopupPanel(folder, anchor, Math.Clamp(config.PanelColumns, MinColumns, MaxColumns), theme, icons);
-        panel.ItemInvoked += (_, item) =>
-        {
-            ShellItem.Open(item.FullPath);
-            panel.Dismiss();
-        };
-        panel.Closed += (_, _) =>
-        {
-            if (_panel == panel)
-            {
-                _panel = null;
-            }
-        };
+        Open(folder, anchor, activate: true);
+    }
 
-        _panel = panel;
-        panel.Show();
-        panel.Activate();
+    /// <summary>
+    /// Opens the panel of the widget something is being dragged over, so the item can be dropped inside. The panel
+    /// the drag started in disappears but lives until the drag ends.
+    /// </summary>
+    public void OpenForDrag(WidgetFolder folder, ScreenRect anchor)
+    {
+        if (_panel is { } current)
+        {
+            if (Same(current.Folder, folder))
+            {
+                return;
+            }
+
+            if (current.IsDragSource)
+            {
+                current.HideForDrag();
+            }
+            else
+            {
+                current.Dismiss();
+            }
+        }
+
+        Open(folder, anchor, activate: false);
+    }
+
+    /// <summary>Like <see cref="Toggle"/>, for a panel asked for from outside the desktop (e.g. the taskbar): opens at the cursor.</summary>
+    public void ToggleAtCursor(WidgetFolder folder)
+    {
+        PInvoke.GetCursorPos(out var cursor);
+        Toggle(folder, new ScreenRect(cursor.X, cursor.Y, cursor.X + 1, cursor.Y + 1));
     }
 
     /// <summary>Refreshes the open panel after a rescan, or closes it if its folder is gone.</summary>
@@ -67,6 +92,47 @@ internal sealed class PanelController(ConfigStore configStore, IconService icons
     }
 
     public void Close() => _panel?.Dismiss();
+
+    private void Open(WidgetFolder folder, ScreenRect anchor, bool activate)
+    {
+        var config = configStore.Config;
+        var theme = PanelTheme.Resolve(config.PanelBackground, PanelTheme.SystemUsesDarkTheme, Backdrop.IsAcrylicSupported);
+        var panel = new PopupPanel(folder, anchor, Math.Clamp(config.PanelColumns, MinColumns, MaxColumns), theme, icons)
+        {
+            ActivateWhenShown = activate,
+            ShowActivated = activate,
+            Renamer = (oldName, newName) => FolderRenamer?.Invoke(oldName, newName),
+        };
+        panel.ItemInvoked += (_, item) =>
+        {
+            ShellItem.Open(item.FullPath);
+            panel.Dismiss();
+        };
+        panel.ItemReordered += (_, e) => ItemReordered?.Invoke(this, e);
+        panel.ItemsDropped += (_, e) => ItemsDropped?.Invoke(this, e);
+        panel.DragFinished += (_, _) =>
+        {
+            // The panel opened during the drag takes over now.
+            if (_panel is { } current && current != panel)
+            {
+                current.Activate();
+            }
+        };
+        panel.Closed += (_, _) =>
+        {
+            if (_panel == panel)
+            {
+                _panel = null;
+            }
+        };
+
+        _panel = panel;
+        panel.Show();
+        if (activate)
+        {
+            panel.Activate();
+        }
+    }
 
     private static bool Same(WidgetFolder a, WidgetFolder b) => string.Equals(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
 }

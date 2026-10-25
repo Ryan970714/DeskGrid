@@ -3,41 +3,88 @@ using DeskGrid.Desktop;
 namespace DeskGrid.Widgets;
 
 /// <summary>
-/// The cells widgets snap to: widget-sized, laid out from the work area's top-right corner (away from
-/// the icons Windows arranges from the top-left) and filled down each column, right to left.
-/// A cell is identified by its top-left corner.
+/// The cells widgets snap to: widget-sized, filled down each column, right to left. A cell is identified
+/// by its top-left corner.
 /// </summary>
-internal sealed class WidgetGrid(ScreenRect workArea, int cellWidth, int cellHeight)
+/// <remarks>
+/// Without an <paramref name="anchor"/> the cells start at the work area's right and top edges (away from
+/// the icons Windows arranges from the top-left). With one, the cells lie on the lattice through that
+/// point, so they line up with the desktop's own icon grid. Cells that <paramref name="obstacles"/> (the
+/// desktop's icons) cover are skipped unless nothing else is left.
+/// </remarks>
+/// <param name="anchor">The top-left corner of any cell of the lattice to follow.</param>
+/// <param name="obstacles">Screen areas widgets should stay clear of.</param>
+internal sealed class WidgetGrid(
+    ScreenRect workArea, int cellWidth, int cellHeight, ScreenPoint? anchor = null, IReadOnlyList<ScreenRect>? obstacles = null)
 {
-    private int Columns => Math.Max(1, workArea.Width / cellWidth);
+    private int FirstColumnX => anchor is { } a
+        ? workArea.Left + Mod(a.X - workArea.Left, cellWidth)
+        : workArea.Right - Columns(workArea.Left) * cellWidth;
 
-    private int Rows => Math.Max(1, workArea.Height / cellHeight);
+    private int FirstRowY => anchor is { } a
+        ? workArea.Top + Mod(a.Y - workArea.Top, cellHeight)
+        : workArea.Top;
+
+    private int Columns(int firstX) => Math.Max(1, (workArea.Right - firstX) / cellWidth);
+
+    private int Rows => Math.Max(1, (workArea.Bottom - FirstRowY) / cellHeight);
 
     /// <summary>The first cell in fill order that isn't <paramref name="taken"/>.</summary>
     public ScreenPoint FirstFree(IReadOnlySet<ScreenPoint> taken) =>
-        Cells().Where(c => !taken.Contains(c)).DefaultIfEmpty(CellAt(0, 0)).First();
+        Candidates(taken).First();
 
     /// <summary>The cell closest to <paramref name="position"/> that isn't <paramref name="taken"/>.</summary>
-    public ScreenPoint NearestFree(ScreenPoint position, IReadOnlySet<ScreenPoint> taken)
+    public ScreenPoint NearestFree(ScreenPoint position, IReadOnlySet<ScreenPoint> taken) =>
+        Candidates(taken).MinBy(c => DistanceSquared(c, position));
+
+    // Free cells; else cells not covered by icons; else all cells.
+    private List<ScreenPoint> Candidates(IReadOnlySet<ScreenPoint> taken)
     {
-        var free = Cells().Where(c => !taken.Contains(c)).ToList();
-        return (free.Count > 0 ? free : Cells()).MinBy(c => DistanceSquared(c, position));
+        var cells = Cells().ToList();
+        var clear = cells.Where(c => !IsCovered(c)).ToList();
+        var free = clear.Where(c => !taken.Contains(c)).ToList();
+        if (free.Count > 0)
+        {
+            return free;
+        }
+
+        return clear.Count > 0 ? clear : cells;
+    }
+
+    private bool IsCovered(ScreenPoint cell)
+    {
+        // Brushing a neighbour's edge doesn't count; sharing a quarter of the cell does.
+        foreach (var obstacle in obstacles ?? [])
+        {
+            var overlapWidth = Math.Min(cell.X + cellWidth, obstacle.Right) - Math.Max(cell.X, obstacle.Left);
+            var overlapHeight = Math.Min(cell.Y + cellHeight, obstacle.Bottom) - Math.Max(cell.Y, obstacle.Top);
+            if (overlapWidth * 4 > cellWidth && overlapHeight * 4 > cellHeight)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private IEnumerable<ScreenPoint> Cells()
     {
-        for (var column = 0; column < Columns; column++)
+        var firstX = FirstColumnX;
+        var firstY = FirstRowY;
+        var columns = Columns(firstX);
+        var rows = Rows;
+
+        // Columns count from the right edge.
+        for (var column = 0; column < columns; column++)
         {
-            for (var row = 0; row < Rows; row++)
+            for (var row = 0; row < rows; row++)
             {
-                yield return CellAt(column, row);
+                yield return new ScreenPoint(firstX + (columns - 1 - column) * cellWidth, firstY + row * cellHeight);
             }
         }
     }
 
-    // Columns count from the right edge.
-    private ScreenPoint CellAt(int column, int row) =>
-        new(workArea.Right - (column + 1) * cellWidth, workArea.Top + row * cellHeight);
+    private static int Mod(int value, int modulus) => ((value % modulus) + modulus) % modulus;
 
     private static long DistanceSquared(ScreenPoint a, ScreenPoint b)
     {

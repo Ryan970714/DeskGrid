@@ -264,3 +264,30 @@
 **Alternatives**: 只改 repo 與顯示名稱、保留內部 `DeskGrid` 識別碼（會造成名稱不一致）。
 **Consequences**: 本檔與 `session-log.md` 之前的紀錄依「只能新增」規則保留舊名 `DeskGrid`，不回改。Config 改存 `%APPDATA%\DeskGrid\`、log 在 `%LOCALAPPDATA%\DeskGrid\`、預設根目錄 `%USERPROFILE%\DeskGrid\`、開機自啟登錄值名 `DeskGrid`、單一執行個體 mutex `Local\DeskGrid.SingleInstance`；舊安裝的資料夾需手動搬移。GitHub 舊網址會自動轉址。
 **Author**: 使用者決定
+
+---
+
+### 2026-10-25 — Widget 格線改用桌面原生圖示格；工作列釘選用自建捷徑
+**Decision**: (1) widget 格大小與錨點取自 Explorer 圖示 list view（跨行程讀 `LVM_GETITEMPOSITION`），並避開被原生圖示佔住的格。(2) 「釘選到工作列」不呼叫未公開的 pin API，而是建 `%APPDATA%\DeskGrid\Pins\<名稱>.lnk`（`DeskGrid.exe --open "名稱"`，圖示為預覽）並在檔案總管選取，請使用者自己釘；啟動時若已有執行個體，經具名管線轉交後結束。(3) 面板內拖曳：同面板重排、拖出由目標處理；拖到另一個 widget 一律移動。
+**Reason**: 使用者回報 widget 與桌面圖示未對齊、互相重疊；Windows 11 不允許程式替使用者釘選（未公開 API 脆弱）。
+**Alternatives**: 固定 76×96 格（舊，無法對齊）；`IPinnedList3` 未公開介面（隨 Windows 更新可能失效）；以 `WM_COPYDATA` 取代具名管線。
+**Consequences**: 多螢幕下格大小以 Explorer 回報值為準（未驗證）；讀不到原生格時退回舊格線。使用者把圖示拖到 widget 上仍會重疊。
+**Author**: Claude（使用者要求功能；實作方式待使用者驗證）
+
+---
+
+### 2026-10-25 — 面板：拖曳動畫（拖曳影子 + 滑動）、拖到 widget 自動開面板、標題就地改名
+**Decision**: (1) 拖曳時用 `DragGhost`（不接輸入的置頂分層視窗）跟著游標，原格留空、其餘項目以 `TranslateTransform` 動畫滑開（iOS 式）；結束時影子飛回格子或縮小消失。拖離面板時缺口合起來。(2) 拖曳（面板項目或外部檔案）停在 widget 上 550 ms → `PanelController.OpenForDrag` 開那個資料夾的面板（不啟用）；原面板只隱藏（DWM cloak）到拖曳結束才關，因為 `DoDragDrop` 在它裡面執行。別的資料夾的項目放進開著的面板 → `ItemImporter.ImportTo` 搬進去，再 `WidgetCatalog.PlaceNewItem` 放到指定位置；放入前面板先在該格開缺口。(3) 面板標題：滑過顯示鉛筆、點擊變輸入框，Enter 確認、Esc 取消、失焦確認；`Directory.Move` 改名（只差大小寫時經暫存名稱），設定由既有的 Renamed 處理轉移。
+**Reason**: 使用者要 iOS 式拖曳體驗與直接改名。
+**Alternatives**: 改用自繪滑鼠拖曳取代 OLE（無法拖到桌面 / 別的程式）；直接關掉原面板（會中斷 OLE 拖曳迴圈）。
+**Consequences**: 面板拖曳時需 Items 的 RenderTransform；放進滿列的面板時新的一列不會預先撐開視窗高度（已知限制）。未在實機驗證。
+**Author**: Claude（使用者要求功能）
+
+---
+
+### 2026-10-25 — 版本檢查：以 GitHub release 為準，三選項彈窗，自動更新靠換檔腳本
+**Decision**: 啟動後 8 秒與設定視窗按鈕查 `releases/latest`；較新時彈窗：更新（下載單檔 exe、驗 `.sha256`，由暫存的 PowerShell 腳本在本程序結束後覆蓋原 exe 並重啟）、維持（`skippedUpdateVersion` 記住該 tag，自動檢查不再提醒）、取消（不存，下次啟動再提醒）。開發版（非單檔）或安裝資料夾不可寫時，更新改為開 release 頁。
+**Reason**: 使用者要求版本檢查與自動更新；執行中的 exe 無法自己覆蓋，所以需要外部腳本。
+**Alternatives**: 內建更新程式 exe（多一個檔要發布）；不驗校驗碼（下載被竄改無從發現）；`WM_COPYDATA` 等。
+**Consequences**: config 新增 `skippedUpdateVersion`（使用者同意）；未簽章 exe 的更新不受 SmartScreen 保護，靠 SHA256 與 GitHub HTTPS；真正的換檔流程要等有比 0.1.0 新的 release 才能實測。
+**Author**: Claude（使用者要求功能）

@@ -23,6 +23,9 @@ internal sealed class AppConfig
 
     public PanelBackground PanelBackground { get; set; } = new();
 
+    /// <summary>The release the user chose to keep the current version over ("Keep"); not asked about again unless a newer one appears.</summary>
+    public string? SkippedUpdateVersion { get; set; }
+
     /// <summary>Keyed by folder name under <see cref="RootPath"/>; case-insensitive like the file system.</summary>
     [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
     public Dictionary<string, WidgetConfig> Widgets { get; } = new(StringComparer.OrdinalIgnoreCase);

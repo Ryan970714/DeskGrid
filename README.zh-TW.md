@@ -30,10 +30,10 @@ Windows 10 22H2 或 Windows 11，64 位元。不需安裝 .NET：下載的是自
 SmartScreen 會跳出警告。要繼續執行，請按 **其他資訊** → **仍要執行**。
 若檔案被封鎖，請在檔案上按右鍵 → **內容** → 勾選 **解除封鎖** → **確定**。
 
-每個 Release 都附有 `.sha256` 檔。檢查下載的檔案是否一致：
+GitHub 的 Release 頁面會在檔案旁顯示 exe 的 SHA-256。檢查下載的檔案是否一致：
 
 ```powershell
-Get-FileHash .\DeskGrid-0.1.0-win-x64.exe -Algorithm SHA256
+Get-FileHash .\DeskGrid-0.2.0-win-x64.exe -Algorithm SHA256
 ```
 
 如果不想信任現成的執行檔，也可以[自己從原始碼建置](#從原始碼建置)。

@@ -23,6 +23,21 @@ public sealed class WidgetCatalogTests : IDisposable
         _temp.Dispose();
     }
 
+    [Theory]
+    [InlineData("a", 2, "b,c,a")]
+    [InlineData("C", 0, "c,a,b")]
+    [InlineData("b", 99, "a,c,b")]
+    [InlineData("a", 0, "a,b,c")]
+    [InlineData("missing", 1, "a,b,c")]
+    public void MoveInOrder_PutsTheItemAtTheIndex(string name, int index, string expected)
+    {
+        var order = new List<string> { "a", "b", "c" };
+
+        WidgetCatalog.MoveInOrder(order, name, index);
+
+        Assert.Equal(expected.Split(','), order);
+    }
+
     [Fact]
     public void Reconcile_NewFolder_GetsSettingsWithItemsInScanOrder()
     {

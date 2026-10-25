@@ -31,10 +31,10 @@ The exe isn't code-signed (signing certificates cost money), so Microsoft Defend
 about it until enough people have run it. To start it anyway, click **More info** → **Run anyway**.
 If the file was blocked, right-click it → **Properties** → check **Unblock** → **OK**.
 
-Each release has a `.sha256` file next to the exe. To check that your download matches:
+GitHub shows the SHA-256 of the exe on the release page, next to the file. To check that your download matches:
 
 ```powershell
-Get-FileHash .\DeskGrid-0.1.0-win-x64.exe -Algorithm SHA256
+Get-FileHash .\DeskGrid-0.2.0-win-x64.exe -Algorithm SHA256
 ```
 
 If you'd rather not trust a binary, [build it yourself](#build-from-source).

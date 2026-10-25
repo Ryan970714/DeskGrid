@@ -10,6 +10,8 @@ using DeskGrid.Panel;
 using DeskGrid.Resources;
 using DeskGrid.Settings;
 using DeskGrid.Shell;
+using DeskGrid.Taskbar;
+using DeskGrid.Updates;
 using DeskGrid.Tray;
 using DeskGrid.Widgets;
 
@@ -19,6 +21,8 @@ public partial class App : Application
 {
     // Per sign-in session: a second launch (e.g. auto-start plus a manual start) just exits.
     private const string SingleInstanceName = @"Local\DeskGrid.SingleInstance";
+
+    private static readonly TimeSpan StartupUpdateCheckDelay = TimeSpan.FromSeconds(8);
 
     private Mutex? _singleInstance;
     private ConfigStore? _configStore;
@@ -30,6 +34,9 @@ public partial class App : Application
     private WidgetBoard? _board;
     private WidgetCatalog? _catalog;
     private SettingsWindow? _settings;
+    private InstanceChannel? _instanceChannel;
+    private string? _pendingOpen;
+    private bool _checkingUpdates;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -38,6 +45,11 @@ public partial class App : Application
         if (!isFirstInstance)
         {
             Log.Info("DeskGrid is already running; this instance exits.");
+            if (OpenRequest.Parse(e.Args) is { } folderName)
+            {
+                InstanceChannel.Send(folderName);
+            }
+
             Shutdown();
             return;
         }
@@ -54,13 +66,20 @@ public partial class App : Application
         _desktopHost.Start();
         _icons = new IconService();
         _panels = new PanelController(_configStore, _icons);
+        _panels.ItemReordered += (_, e) => _catalog?.MoveItem(e.FolderName, e.ItemName, e.Index);
+        _panels.ItemsDropped += (_, e) => AddDroppedItems(e);
+        _panels.FolderRenamer = RenameFolder;
         _tray = new TrayIcon(Strings.AppName, TrayMenu);
+        _pendingOpen = OpenRequest.Parse(e.Args);
+        _instanceChannel = new InstanceChannel(name => Dispatcher.BeginInvoke(() => OpenPanel(name)));
         StartWidgets();
+        _ = CheckForUpdatesAtStartupAsync();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
         _settings?.Close();
+        _instanceChannel?.Dispose();
         StopWidgets();
         _tray?.Dispose();
         _icons?.Dispose();
@@ -110,6 +129,8 @@ public partial class App : Application
     {
         var board = new WidgetBoard(_desktopHost!, _configStore!, _icons!);
         board.WidgetClicked += (_, click) => _panels!.Toggle(click.Folder, click.Bounds);
+        board.DragHovered += (_, hover) => _panels!.OpenForDrag(hover.Folder, hover.Bounds);
+        board.PinRequested += (_, folder) => _ = PinToTaskbarAsync(folder);
 
         var catalog = new WidgetCatalog(_configStore!);
         catalog.Changed += (_, _) =>
@@ -117,6 +138,12 @@ public partial class App : Application
             _icons!.Retain(catalog.Widgets);
             board.Show(catalog.Widgets);
             _panels!.Refresh(catalog.Widgets);
+
+            if (_pendingOpen is { } name)
+            {
+                _pendingOpen = null;
+                OpenPanel(name);
+            }
         };
 
         (_board, _catalog) = (board, catalog);
@@ -129,6 +156,179 @@ public partial class App : Application
         _catalog?.Dispose();
         _board?.Dispose();
         (_board, _catalog) = (null, null);
+    }
+
+    // A taskbar button was clicked: show that folder's panel above it.
+    private void OpenPanel(string folderName)
+    {
+        if (_catalog?.Widgets.FirstOrDefault(w => string.Equals(w.Name, folderName, StringComparison.OrdinalIgnoreCase)) is { } folder)
+        {
+            _panels!.ToggleAtCursor(folder);
+        }
+        else
+        {
+            Log.Info($"Taskbar asked for \"{folderName}\", which is not a widget folder.");
+        }
+    }
+
+    // Items were dropped on an open panel: add them to its folder and put them where they were dropped.
+    private void AddDroppedItems(ItemsDroppedEventArgs drop)
+    {
+        var config = _configStore!.Config;
+        if (_catalog?.Widgets.FirstOrDefault(w => string.Equals(w.Name, drop.FolderName, StringComparison.OrdinalIgnoreCase)) is not { } folder)
+        {
+            return;
+        }
+
+        var added = ItemImporter.ImportTo(drop.Paths, folder.FullPath, config.DropMode, FolderPaths.Desktops, config.RootPath);
+        for (var i = 0; i < added.Count; i++)
+        {
+            _catalog.PlaceNewItem(folder.Name, Path.GetFileName(added[i]), drop.Index + i);
+        }
+    }
+
+    // Renames a widget folder on disk; the scanner moves its settings along. Returns why not, or null.
+    private string? RenameFolder(string oldName, string newName)
+    {
+        var root = _configStore!.Config.RootPath;
+        var caseOnly = string.Equals(oldName, newName, StringComparison.OrdinalIgnoreCase);
+        if (WidgetFolderName.Validate(root, newName) is { } problem && !(caseOnly && problem == Strings.NewFolderExists))
+        {
+            return problem;
+        }
+
+        try
+        {
+            var from = Path.Combine(root, oldName);
+            var to = Path.Combine(root, newName);
+            if (caseOnly)
+            {
+                // A move onto the same name (ignoring case) is refused, so go through a temporary name.
+                var temporary = Path.Combine(root, $"{newName}.{Guid.NewGuid():N}.tmp");
+                Directory.Move(from, temporary);
+                Directory.Move(temporary, to);
+            }
+            else
+            {
+                Directory.Move(from, to);
+            }
+
+            return null;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Log.Error($"Renaming \"{oldName}\" to \"{newName}\" failed", exception);
+            return string.Format(Strings.RenameFailed, exception.Message);
+        }
+    }
+
+    private async Task PinToTaskbarAsync(WidgetFolder folder)
+    {
+        try
+        {
+            var shortcut = PinShortcut.Create(folder.Name, await _icons!.GetPreviewAsync(folder));
+            ShellItem.Reveal(shortcut);
+            MessageBox.Show(string.Format(Strings.PinCreated, folder.Name), Strings.AppName, MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
+        {
+            Log.Error($"Creating the taskbar shortcut for \"{folder.Name}\" failed", exception);
+            MessageBox.Show(string.Format(Strings.PinFailed, exception.Message), Strings.AppName, MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    // A few seconds after start, so it doesn't compete with the desktop coming up. Quiet unless there is news.
+    private async Task CheckForUpdatesAtStartupAsync()
+    {
+        await Task.Delay(StartupUpdateCheckDelay);
+        await CheckForUpdatesAsync(manual: false, owner: null);
+    }
+
+    // Asks GitHub for the latest release and, if it is newer than this one, offers the update.
+    // A manual check also offers a release the user chose to keep the current version over.
+    // Returns what the settings window shows next to its button.
+    private async Task<string> CheckForUpdatesAsync(bool manual, Window? owner)
+    {
+        if (_checkingUpdates)
+        {
+            return Strings.SettingsChecking;
+        }
+
+        _checkingUpdates = true;
+        try
+        {
+            if (await UpdateChecker.GetLatestAsync() is not { } latest)
+            {
+                return Strings.SettingsCheckFailed;
+            }
+
+            Log.Info($"Update check: latest release {latest.Tag}, running {UpdateChecker.CurrentVersion.ToString(3)}.");
+            if (!UpdateChecker.IsNewer(latest.Version, UpdateChecker.CurrentVersion))
+            {
+                return Strings.SettingsUpToDate;
+            }
+
+            var config = _configStore!.Config;
+            if (!manual && config.SkippedUpdateVersion == latest.Tag)
+            {
+                return "";
+            }
+
+            return OfferUpdate(latest, owner);
+        }
+        finally
+        {
+            _checkingUpdates = false;
+        }
+    }
+
+    private string OfferUpdate(ReleaseInfo latest, Window? owner)
+    {
+        string? downloaded = null;
+        var dialog = new UpdateDialog(latest, async progress =>
+        {
+            if (!UpdateInstaller.CanReplaceSelf)
+            {
+                // A development build can't replace itself; the release page is opened below.
+                return null;
+            }
+
+            var (path, error) = await UpdateInstaller.DownloadAsync(latest, progress);
+            downloaded = path;
+            return error;
+        });
+        if (owner is { IsVisible: true })
+        {
+            dialog.Owner = owner;
+        }
+
+        dialog.ShowDialog();
+        switch (dialog.Choice)
+        {
+            case UpdateChoice.Keep:
+                _configStore!.Config.SkippedUpdateVersion = latest.Tag;
+                _configStore.Save();
+                break;
+
+            case UpdateChoice.Update when downloaded is not null:
+                if (UpdateInstaller.StartReplacement(downloaded) is { } problem)
+                {
+                    MessageBox.Show(string.Format(Strings.UpdateFailed, problem), Strings.AppName, MessageBoxButton.OK, MessageBoxImage.Error);
+                    ShellItem.Open(latest.PageUrl);
+                }
+                else
+                {
+                    Shutdown();
+                }
+
+                break;
+
+            case UpdateChoice.Update:
+                ShellItem.Open(latest.PageUrl);
+                break;
+        }
+
+        return string.Format(Strings.SettingsUpdateAvailable, latest.Version.ToString(3));
     }
 
     private void CreateFolder()
@@ -162,6 +362,7 @@ public partial class App : Application
 
         var settings = new SettingsWindow(_configStore!.Config);
         settings.Applied += (_, choice) => ApplySettings(choice);
+        settings.CheckForUpdates = () => CheckForUpdatesAsync(manual: true, settings);
         settings.Closed += (_, _) => _settings = null;
         _settings = settings;
         settings.Show();

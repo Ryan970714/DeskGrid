@@ -71,6 +71,43 @@ internal sealed class WidgetCatalog : IDisposable
         return changed;
     }
 
+    /// <summary>Puts <paramref name="itemName"/> at <paramref name="index"/> of the widget's saved order and rescans.</summary>
+    public void MoveItem(string widgetName, string itemName, int index)
+    {
+        if (_store.Config.Widgets.TryGetValue(widgetName, out var widgetConfig) && MoveInOrder(widgetConfig.ItemOrder, itemName, index))
+        {
+            _store.Save();
+            Refresh();
+        }
+    }
+
+    /// <summary>
+    /// Like <see cref="MoveItem"/> for an item that was just put into the widget's folder: rescans first, so
+    /// the item is known by the time it is moved.
+    /// </summary>
+    public void PlaceNewItem(string widgetName, string itemName, int index)
+    {
+        Refresh();
+        MoveItem(widgetName, itemName, index);
+    }
+
+    /// <summary>Moves <paramref name="name"/> to <paramref name="index"/> (clamped) in <paramref name="order"/>.</summary>
+    /// <returns><see langword="true"/> if the order changed.</returns>
+    internal static bool MoveInOrder(List<string> order, string name, int index)
+    {
+        var from = order.FindIndex(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase));
+        var to = Math.Clamp(index, 0, order.Count - 1);
+        if (from < 0 || from == to)
+        {
+            return false;
+        }
+
+        var moved = order[from];
+        order.RemoveAt(from);
+        order.Insert(to, moved);
+        return true;
+    }
+
     // Keeps saved names that still exist (once each), then appends new ones in scan order.
     private static bool SyncItemOrder(List<string> order, IReadOnlyList<FolderItem> items)
     {

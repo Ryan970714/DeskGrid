@@ -56,6 +56,9 @@ internal readonly record struct IconLayer(HWND Handle, DesktopLayout Layout)
         return null;
     }
 
+    /// <summary>The <c>SysListView32</c> that draws the desktop icons.</summary>
+    public HWND FindListView() => FindChild(Handle, "SysListView32");
+
     private static HWND FindChild(HWND parent, string className, HWND after = default) =>
         PInvoke.FindWindowEx(parent, after, className, null);
 
