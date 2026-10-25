@@ -37,7 +37,8 @@ internal sealed record PanelTheme(bool UseAcrylic, Color Background, Color Foreg
         return new(false, WithOpacity(color, setting.CustomOpacity), Luminance(color) > 0.5 ? DarkText : Colors.White);
     }
 
-    private static Color? ParseColor(string text)
+    /// <summary>Parses "#RRGGBB" (or a named color); <see langword="null"/> if invalid.</summary>
+    internal static Color? ParseColor(string text)
     {
         try
         {

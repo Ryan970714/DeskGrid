@@ -16,7 +16,6 @@ internal sealed class DesktopHost : IDisposable
 {
     private readonly List<DesktopSurface> _surfaces = [];
     private readonly DispatcherTimer _retryTimer = new() { Interval = TimeSpan.FromSeconds(1) };
-    private readonly uint _taskbarCreatedMessage = PInvoke.RegisterWindowMessage("TaskbarCreated");
     private HwndSource? _shellEventsWindow;
     private IconLayer? _layer;
 
@@ -52,7 +51,7 @@ internal sealed class DesktopHost : IDisposable
 
     public void Start()
     {
-        _shellEventsWindow = CreateShellEventsWindow();
+        _shellEventsWindow = ShellMessageWindow.Create("DeskFolders.ShellEvents", ShellEventsHook);
         EnsureAttached();
     }
 
@@ -114,26 +113,9 @@ internal sealed class DesktopHost : IDisposable
         _retryTimer.Start();
     }
 
-    private unsafe HwndSource CreateShellEventsWindow()
-    {
-        // Hidden, unowned top-level window: message-only windows don't receive broadcasts.
-        var source = new HwndSource(new HwndSourceParameters("DeskFolders.ShellEvents")
-        {
-            WindowStyle = unchecked((int)WINDOW_STYLE.WS_POPUP),
-            Width = 0,
-            Height = 0,
-        });
-
-        // Let Explorer's broadcast through UIPI if we happen to run elevated.
-        PInvoke.ChangeWindowMessageFilterEx(new HWND(source.Handle), _taskbarCreatedMessage, WINDOW_MESSAGE_FILTER_ACTION.MSGFLT_ALLOW, null);
-        source.AddHook(ShellEventsHook);
-        return source;
-    }
-
     private IntPtr ShellEventsHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        // Explorer broadcasts this after (re)creating the taskbar, e.g. when explorer.exe restarts.
-        if ((uint)msg == _taskbarCreatedMessage)
+        if ((uint)msg == ShellMessageWindow.TaskbarCreatedMessage)
         {
             Log.Info("TaskbarCreated received.");
             EnsureAttached();

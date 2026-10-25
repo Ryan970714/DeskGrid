@@ -42,7 +42,9 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 | IconService | `Icons/` | IShellItemImageFactory 取 256px 圖示；依排序取前 4 個合成 2×2 預覽；快取，資料夾變動才重建 |
 | FolderWidget | `Widgets/` | 桌面上的資料夾圖示 + 名稱，可拖動並存位置（`FolderWidget` 視圖、`WidgetBoard` 同步與擺放、`WidgetGrid` 格線） |
 | PopupPanel | `Panel/` | 格子面板（預設 3 欄，超過可捲動，不分頁）；點項目用 ShellExecute 啟動；點外部 / Esc / 失焦收合 |
-| TrayApp | 待定 | 系統匣選單：新增資料夾、開啟根目錄、設定、開機自啟開關、結束 |
+| TrayApp | `Tray/`、`Settings/` | 系統匣選單：新增資料夾、開啟根目錄、設定、開機自啟開關、結束（`TrayIcon`、`AutoStart`；設定視窗與新增資料夾對話框在 `Settings/`） |
+| 拖放加入 | `Folders/ItemImporter` | 拖到 widget 的檔案依規則建捷徑 / 移動 / 複製 |
+| （輔助）Shell | `Shell/` | Shell 互通：`ShellImage`（圖示）、`ShellItem`（ShellExecute 開啟、顯示名稱）、`ShortcutFile`（建 .lnk） |
 | （輔助）Log | `Diagnostics/` | 簡易 append-only log |
 | （輔助）DispatcherThread | `Threading/` | 獨立 STA 執行緒上的 WPF Dispatcher（Shell / WPF 影像用；測試也拿來當 UI 執行緒） |
 | （輔助）Strings | `Resources/` | `Strings.resx`（en，neutral）+ `Strings.zh-TW.resx`；build 時產生強型別 `DeskFolders.Resources.Strings` |
@@ -99,6 +101,18 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 - **名稱**：項目名稱用 Shell 顯示名稱（`SIGDN_NORMALDISPLAY`，與檔案總管一致，`.lnk`/`.url` 不顯示副檔名、其他依使用者「隱藏副檔名」設定）。
 - Button 的佈景主題樣式會強制黑字，項目樣式要明確綁回視窗 `Foreground`。
 
+## 拖放 / Tray / 設定 實作要點（階段 6）
+
+- **拖放規則**（`ItemImporter.Plan`，使用者選定）：`.exe` → 建 `.lnk`（絕不移動或複製 exe 本體）；**直接放在**使用者或公用桌面上的 `.lnk`/`.url` → 依 `DropMode`（預設移動）；其他地方的 `.lnk`/`.url` → 一律複製；一般檔案與資料夾 → 建 `.lnk`；已在該資料夾內、或拖的是該資料夾本身/上層 → 忽略。同名自動加「 (2)」。公用桌面捷徑沒權限移動 → 改複製。
+- **捷徑命名**：exe 用檔名（`notepad.exe` → `notepad.lnk`）、其他保留完整檔名（`report.pdf.lnk`）、資料夾用資料夾名；工作目錄 = 目標所在資料夾。
+- **拖放接線**：`FolderWidget` 只負責 `AllowDrop` 與拖曳中的高亮；`WidgetBoard` 處理 `DragOver`（游標顯示第一個可處理項目的效果：移動 / 複製 / 連結）與 `Drop`。檔案操作自己做完後對來源回報 **Copy，絕不回報 Move**，否則來源會以為要刪掉原檔。OLE 拖放可送達 Explorer 底下的跨行程子視窗（已用 OLE 拖曳實測）。
+- **系統匣**（`TrayIcon`）：`Shell_NotifyIcon` + `NOTIFYICON_VERSION_4`，左右鍵都開原生 Win32 選單（每次重建，勾選狀態即時）；選單動作在選單關閉後才執行（可能開模態視窗）；`TaskbarCreated` 時重新加入圖示。圖示用 `LoadIconMetric` 從 exe 的 `#32512`（`<ApplicationIcon>`）載入 → **manifest 必須宣告 Common Controls v6**。
+- **開機自啟**（`AutoStart`）：`HKCU\...\Run\DeskFolders = "exe 路徑"`；工作管理員「啟動應用程式」停用時會在 `StartupApproved\Run` 留旗標（第一個 byte 為奇數）→ 視為關閉；我們切換時會清掉該旗標。啟動時若 exe 被搬走就更新路徑。
+- **單一執行個體**：`Local\DeskFolders.SingleInstance` mutex，第二個直接結束。
+- **設定視窗**：根目錄（`OpenFolderDialog`）、欄數 1–8、桌面捷徑拖入模式、面板背景（自訂色用 comdlg32 `ChooseColor`）。非模態、確定 / 取消；**非模態視窗的 `IsCancel` 不會自動關窗**，要自己 `Close()`。根目錄變更 → 重建 catalog 與 widget；其他設定 → 存檔、關閉已開面板。
+- **XAML 不可引用本組件型別**（例如 `x:Static` 到 `Strings`）：`Strings` 在 build 時才產生在 `obj/`，WPF 的暫時標記組件編譯不到。介面文字在 code-behind 設定。
+- **App 圖示**：`tools/make-icon.ps1` 產生 `src/DeskFolders/Assets/DeskFolders.ico`（多尺寸 PNG ICO）。
+
 # 行為規則（必須遵守）
 
 - 拖 `.exe` 進資料夾 → 建立 `.lnk`，**禁止移動或複製 exe 本體**
@@ -118,8 +132,8 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 | 2 | ConfigStore + FolderScanner + FileSystemWatcher | ✅ 2026-10-24 使用者驗證通過 |
 | 3 | IconService + 預覽合成 | ✅ 2026-10-24 使用者驗證通過 |
 | 4 | FolderWidget（顯示、拖動、存位置） | ✅ 2026-10-24 使用者驗證通過 |
-| 5 | PopupPanel（格子、啟動、收合） | ✅ 完成 2026-10-25，待使用者驗證 |
-| 6 | 拖放加入、TrayApp、開機自啟 | ⏳ |
+| 5 | PopupPanel（格子、啟動、收合） | ✅ 2026-10-25 使用者驗證通過 |
+| 6 | 拖放加入、TrayApp、開機自啟 | ✅ 完成 2026-10-25，待使用者驗證 |
 | 7 | GitHub Actions CI、self-contained 打包、README（含 SmartScreen 未簽章說明）、LICENSE (MIT) | ⏳ |
 
 # 工作方式

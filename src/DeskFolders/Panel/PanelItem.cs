@@ -3,6 +3,7 @@ using System.Windows.Media.Imaging;
 using DeskFolders.Diagnostics;
 using DeskFolders.Folders;
 using DeskFolders.Icons;
+using DeskFolders.Shell;
 
 namespace DeskFolders.Panel;
 

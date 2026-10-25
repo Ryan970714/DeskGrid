@@ -1,16 +1,16 @@
 # Todo
 
 ## High Priority
-- 使用者手動驗證階段 5（含：其他 App 在前景時點 widget 也能開面板並取得焦點）
+- 使用者手動驗證階段 6（特別是：從檔案總管桌面拖捷徑 / exe / 檔案 / 資料夾到 widget）
 - 在 Win10 22H2（或 Win11 23H2）驗證舊版桌面階層與面板非 Acrylic 路徑（可用 VirtualBox VM）
 
 ## Medium Priority
-- 階段 6 開始前需確認：設定視窗內容與版面（根目錄、欄數、拖入模式、面板背景含自訂色）、拖放加入的細節、開機自啟方式（登錄 Run 機碼 / 工作排程 / 啟動資料夾）
-- 階段 6：移除 widget 右鍵的暫時性「結束」選單；字串 `MenuExit` 沿用到系統匣
-- 階段 6：設定變更即時套用（根目錄變更需重建 catalog / board）
+- 階段 7 開始前需確認：GitHub repo 名稱、公開或私人、發布方式（GitHub Releases 附 self-contained exe？）、CI 範圍（build + test）
+- 面板開著時拖曳另一個 widget → 關閉面板
 
 ## Low Priority
-- 面板開著時拖曳另一個 widget → 關閉面板
+- 系統匣選單 / 設定視窗跟隨深色模式
+- 從開始功能表拖 UWP App（用 IShellLink SetIDList 建捷徑）
 - 面板方向鍵導覽
 - 執行中解析度 / DPI / 工作列變更時重新吸附 widget（`WM_DISPLAYCHANGE`、`WM_SETTINGCHANGE`）
 - 拖曳中 Esc 取消

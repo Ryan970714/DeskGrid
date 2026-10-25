@@ -1,3 +1,4 @@
+using System.Windows;
 using System.Windows.Media.Imaging;
 using DeskFolders.Config;
 using DeskFolders.Desktop;
@@ -12,6 +13,7 @@ internal sealed record WidgetClickedEventArgs(WidgetFolder Folder, ScreenRect Bo
 /// <summary>
 /// Shows one <see cref="FolderWidget"/> per widget folder on the desktop and keeps them in step with
 /// the catalog. Every widget sits on its own <see cref="WidgetGrid"/> cell; positions are saved.
+/// Files dropped on a widget are added to its folder by <see cref="ItemImporter"/>.
 /// </summary>
 internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, IconService icons) : IDisposable
 {
@@ -73,7 +75,8 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
         return SavePosition(folder.Name, position);
     }
 
-    private void Drop(Entry entry)
+    // A widget was dragged and let go: snap it to the nearest free cell.
+    private void Snap(Entry entry)
     {
         var dropped = entry.Surface.Position;
         var position = GridOn(MonitorArea.At(dropped)).NearestFree(dropped, TakenCells(except: entry));
@@ -82,6 +85,38 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
         {
             configStore.Save();
         }
+    }
+
+    private static string[] DroppedPaths(DragEventArgs e) =>
+        e.Data.GetData(DataFormats.FileDrop) as string[] ?? [];
+
+    // The cursor shows what the first droppable item would do.
+    private DragDropEffects DropEffect(WidgetFolder folder, DragEventArgs e)
+    {
+        var action = DroppedPaths(e)
+            .Select(path => ItemImporter.Plan(path, folder.FullPath, configStore.Config.DropMode, FolderPaths.Desktops))
+            .FirstOrDefault(a => a != ImportAction.None);
+        var effect = action switch
+        {
+            ImportAction.Move => DragDropEffects.Move,
+            ImportAction.Copy => DragDropEffects.Copy,
+            ImportAction.CreateShortcut => DragDropEffects.Link,
+            _ => DragDropEffects.None,
+        };
+
+        // Show Copy if the source doesn't offer the natural effect; the drop is handled the same either way.
+        return effect == DragDropEffects.None || (e.AllowedEffects & effect) != 0
+            ? effect
+            : e.AllowedEffects & DragDropEffects.Copy;
+    }
+
+    private void ImportDropped(WidgetFolder folder, DragEventArgs e)
+    {
+        var added = ItemImporter.Import(DroppedPaths(e), folder.FullPath, configStore.Config.DropMode, FolderPaths.Desktops);
+
+        // We moved, copied or linked the files ourselves. Never report Move: the source would then
+        // delete what it thinks it still has.
+        e.Effects = added > 0 ? DragDropEffects.Copy : DragDropEffects.None;
     }
 
     private static ScreenRect BoundsOf(Entry entry)
@@ -123,7 +158,17 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
             View.Clicked += (_, _) => board.WidgetClicked?.Invoke(board, new WidgetClickedEventArgs(Folder, BoundsOf(this)));
             View.DragStarted += (_, _) => _dragOrigin = Surface.Position;
             View.Dragged += (_, offset) => Surface.MoveTo(_dragOrigin.Offset(offset.X, offset.Y));
-            View.DragCompleted += (_, _) => board.Drop(this);
+            View.DragCompleted += (_, _) => board.Snap(this);
+            View.DragOver += (_, e) =>
+            {
+                e.Effects = board.DropEffect(Folder, e);
+                e.Handled = true;
+            };
+            View.Drop += (_, e) =>
+            {
+                board.ImportDropped(Folder, e);
+                e.Handled = true;
+            };
         }
 
         public WidgetFolder Folder { get; private set; }

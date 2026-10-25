@@ -201,3 +201,39 @@
 **Author**: Claude
 
 ---
+
+### 2026-10-25 — 拖放規則與開機自啟方式
+**Decision**: 一般檔案 → 建捷徑；非桌面的 `.lnk`/`.url` → 一律複製；資料夾 → 建捷徑；`.exe` → 建捷徑（規格）；桌面捷徑 → 依拖入模式（規格）。開機自啟用 HKCU Run 機碼。
+**Reason**: 使用者選定；建捷徑不會意外搬走使用者的文件；不破壞開始功能表等原處。Run 機碼免管理員、會出現在工作管理員「啟動應用程式」。
+**Alternatives**: 一般檔案依拖入模式或一律複製；其他捷徑跟桌面一樣；工作排程；啟動資料夾。
+**Consequences**: Run 值存在但工作管理員停用時視為關閉，我們切換時清掉該旗標。
+**Author**: 使用者決定
+
+---
+
+### 2026-10-25 — 階段 6 慣例預設
+**Decision**: 只有 widget 接受拖放（面板不接受）；原生 Win32 系統匣選單，左右鍵都開；設定視窗確定/取消、非模態、只能開一個；同名加「 (2)」；公用桌面捷徑沒權限移動就改複製；單一執行個體（`Local\` mutex）；自畫 App 圖示；拖放後對來源回報 Copy。
+**Reason**: 慣例且簡單；回報 Move 會讓來源刪除它以為還在的檔案。
+**Alternatives**: 面板也接受拖放；WPF ContextMenu；即時套用設定；允許多開。
+**Consequences**: 原生選單在深色模式下為淺色。
+**Author**: Claude（已於階段回報告知）
+
+---
+
+### 2026-10-25 — Shell 互通集中到 Shell/
+**Decision**: `ShellImage`（原 Icons/）、`ShellItem`（原 Panel/）與新的 `ShortcutFile` 移到 `Shell/`。
+**Reason**: 都是 Shell COM / ShellExecute 互通，且被多個模組使用（Icons、Panel、Folders、App）。
+**Alternatives**: 留在各自使用的模組。
+**Consequences**: namespace `DeskFolders.Shell`。
+**Author**: Claude
+
+---
+
+### 2026-10-25 — XAML 不引用本組件型別
+**Decision**: 對話框文字在 code-behind 設定，不用 `x:Static res:Strings.*`；`Strings` 維持 internal。
+**Reason**: XAML 引用本地型別會觸發 WPF 暫時標記組件編譯，而 `Strings` 由 resx 在 build 時產生於 `obj/`，暫時組件編譯不到。
+**Alternatives**: 把產生的 Strings.Designer.cs 放進原始碼（需手動同步）；自訂 build target 提早產生（會重複加入 Compile）。
+**Consequences**: 每個視窗多一段 `LocalizeTexts()`。
+**Author**: Claude
+
+---

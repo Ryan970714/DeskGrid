@@ -1,0 +1,30 @@
+using System.IO;
+using System.Text.RegularExpressions;
+using DeskFolders.Resources;
+
+namespace DeskFolders.Folders;
+
+/// <summary>Rules for naming a new widget folder.</summary>
+internal static partial class WidgetFolderName
+{
+    /// <summary>"New folder", or "New folder (2)" and so on if taken.</summary>
+    public static string Suggest(string rootPath) =>
+        Path.GetFileName(ItemImporter.UniquePath(rootPath, Strings.NewFolderDefaultName));
+
+    /// <summary>Returns <see langword="null"/> if <paramref name="name"/> can be created in <paramref name="rootPath"/>, else why not.</summary>
+    public static string? Validate(string rootPath, string name)
+    {
+        name = name.Trim();
+        if (name.Length == 0 || name.EndsWith('.') || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || ReservedName().IsMatch(name))
+        {
+            return Strings.NewFolderInvalidName;
+        }
+
+        var path = Path.Combine(rootPath, name);
+        return Directory.Exists(path) || File.Exists(path) ? Strings.NewFolderExists : null;
+    }
+
+    // Device names Windows won't create as folders, with or without an extension.
+    [GeneratedRegex(@"^(CON|PRN|AUX|NUL|COM\d|LPT\d)(\..*)?$", RegexOptions.IgnoreCase)]
+    private static partial Regex ReservedName();
+}

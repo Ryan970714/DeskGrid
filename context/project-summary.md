@@ -26,29 +26,34 @@ src/DeskFolders/
   NativeMethods.txt       CsWin32 API list
   App.xaml(.cs)           entry; ShutdownMode=OnExplicitShutdown
   Config/                 AppConfig, ConfigStore
-  Desktop/                DesktopHost, DesktopSurface, IconLayer, MonitorArea, ScreenPoint/ScreenRect
+  Assets/                 DeskFolders.ico (tools/make-icon.ps1)
+  Desktop/                DesktopHost, DesktopSurface, IconLayer, MonitorArea, ShellMessageWindow, ScreenPoint/ScreenRect
   Diagnostics/            Log
-  Folders/                FolderScanner, WidgetCatalog, RootFolder, NaturalStringComparer, records
-  Icons/                  IconService, ShellImage, PreviewComposer
-  Panel/                  PopupPanel (XAML), PanelController, PanelPlacement, PanelTheme, Backdrop, ShellItem, PanelItem
+  Folders/                FolderScanner, WidgetCatalog, RootFolder, FolderPaths, ItemImporter, WidgetFolderName, NaturalStringComparer, records
+  Icons/                  IconService, PreviewComposer
+  Panel/                  PopupPanel (XAML), PanelController, PanelPlacement, PanelTheme, Backdrop, PanelItem
   Resources/              Strings.resx (en), Strings.zh-TW.resx
+  Settings/               SettingsWindow (XAML), NewFolderDialog (XAML), ColorDialog
+  Shell/                  ShellImage, ShellItem, ShortcutFile
   Threading/              DispatcherThread (STA worker)
+  Tray/                   TrayIcon, AutoStart
   Widgets/                FolderWidget (XAML), WidgetBoard, WidgetGrid
 tests/DeskFolders.Tests/  xUnit v3
+tools/                    make-icon.ps1
 context/                  session context docs
 ```
 
 ## Core Modules
-DesktopHost（`Desktop/`）、ConfigStore（`Config/`）、FolderScanner + WidgetCatalog（`Folders/`）、IconService（`Icons/`）、FolderWidget + WidgetBoard（`Widgets/`）、PopupPanel + PanelController（`Panel/`）。其餘模組見 `CLAUDE.md`「架構」。
+DesktopHost（`Desktop/`）、ConfigStore（`Config/`）、FolderScanner + WidgetCatalog（`Folders/`）、IconService（`Icons/`）、FolderWidget + WidgetBoard（`Widgets/`）、PopupPanel + PanelController（`Panel/`）、TrayIcon + AutoStart（`Tray/`）、設定（`Settings/`）、拖放（`Folders/ItemImporter`）。其餘模組見 `CLAUDE.md`「架構」。
 
 ## Coding Rules
 見 `AGENTS.md`.
 
 ## Current Milestone
-階段 5：PopupPanel（格子、啟動、收合）。
+階段 6：拖放加入、TrayApp、開機自啟。
 
 ## Current Status
-階段 1–4 使用者驗證通過。階段 5 完成，48 個測試通過，本機實機驗證（Acrylic 與 layered 兩種背景：開啟、Esc、點外部、切換、啟動）通過，待使用者手動驗證。
+階段 1–5 使用者驗證通過。階段 6 完成，72 個測試通過；實機驗證系統匣選單、設定、新增資料夾、開機自啟切換、單一執行個體、OLE 拖放（WPF 來源）；**從檔案總管桌面拖圖示到 widget 尚未實機驗證**，待使用者手動驗證。
 
 ## Known Issues
 - 舊版桌面階層（Win10 / Win11 ≤ 23H2）程式路徑尚未實機測試。
@@ -66,9 +71,12 @@ DesktopHost（`Desktop/`）、ConfigStore（`Config/`）、FolderScanner + Widge
 - 執行中改解析度、DPI、工作列位置時 widget 不會重新吸附，重啟 app 才夾回工作區。
 - 多螢幕：格子大小依各螢幕 DPI 算，但 widget 實際以 Progman 的 DPI 渲染，不同 DPI 的副螢幕上可能錯位。
 - 拖曳中無法用 Esc 取消；放到已佔用的格子會被放到次近的空格。
-- 暫時性：widget 右鍵選單只有「結束」（階段 6 移除）。
 - 面板開著時拖曳另一個 widget，面板不會自動關閉。
-- 面板背景只在開啟時讀取設定與系統深淺色；目前改設定要手改 config 並重啟 app（階段 6 設定 UI）。
+- 面板背景只在開啟時讀取設定與系統深淺色。
+- 從開始功能表拖 App（UWP / 非檔案系統項目）到 widget 不支援（沒有檔案路徑）。
+- 以系統管理員身分執行時，UIPI 會擋掉從檔案總管拖來的檔案。
+- 系統匣選單是原生 Win32 選單，深色模式下仍是淺色；設定視窗為傳統 WPF 外觀（淺色）。
+- 變更根目錄會重建所有 widget（短暫閃爍）。
 - Win10 上「system」背景走不透明系統色路徑，未在 Win10 實機看過。
 - 面板內只支援 Tab / Enter 鍵盤操作，沒有方向鍵。
 

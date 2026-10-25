@@ -8,13 +8,13 @@ using Windows.Win32.Foundation;
 using Windows.Win32.Graphics.Gdi;
 using Windows.Win32.UI.Shell;
 
-namespace DeskFolders.Icons;
+namespace DeskFolders.Shell;
 
 /// <summary>Asks the Shell for a file's icon, the same one Explorer shows. Call on an STA thread.</summary>
 internal static class ShellImage
 {
     /// <summary>
-    /// Returns a frozen <paramref name="size"/>² icon (a shortcut's target icon, without the arrow
+    /// Returns a frozen <paramref name="size"/>Â² icon (a shortcut's target icon, without the arrow
     /// overlay), or <see langword="null"/> if the Shell can't produce one. Never a content thumbnail.
     /// </summary>
     public static BitmapSource? GetIcon(string path, int size)

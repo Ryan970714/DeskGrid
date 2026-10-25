@@ -1,5 +1,6 @@
 using System.Windows.Media.Imaging;
 using DeskFolders.Folders;
+using DeskFolders.Shell;
 using DeskFolders.Threading;
 
 namespace DeskFolders.Icons;

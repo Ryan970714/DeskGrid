@@ -2,6 +2,7 @@ using DeskFolders.Config;
 using DeskFolders.Desktop;
 using DeskFolders.Folders;
 using DeskFolders.Icons;
+using DeskFolders.Shell;
 
 namespace DeskFolders.Panel;
 

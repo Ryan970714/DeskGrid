@@ -35,16 +35,5 @@ internal static class RootFolder
 
     // Explorer already shows these folders' contents as desktop icons.
     internal static bool IsOnDesktop(string path) =>
-        new[] { Environment.SpecialFolder.DesktopDirectory, Environment.SpecialFolder.CommonDesktopDirectory }
-            .Select(Environment.GetFolderPath)
-            .Any(desktop => desktop.Length > 0 && IsSameOrInside(path, desktop));
-
-    private static bool IsSameOrInside(string path, string folder) =>
-        WithTrailingSeparator(path).StartsWith(WithTrailingSeparator(folder), StringComparison.OrdinalIgnoreCase);
-
-    private static string WithTrailingSeparator(string path)
-    {
-        var fullPath = Path.GetFullPath(path);
-        return Path.EndsInDirectorySeparator(fullPath) ? fullPath : fullPath + Path.DirectorySeparatorChar;
-    }
+        FolderPaths.Desktops.Any(desktop => FolderPaths.IsSameOrInside(path, desktop));
 }

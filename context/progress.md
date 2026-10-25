@@ -7,7 +7,14 @@
   - `DesktopSurface`：layered 子視窗 HwndSource，可重建並沿用 WPF content
   - `DesktopHost`：Lost 事件 + 每秒重試 + `TaskbarCreated` 監聽，自動重掛
   - 專案 context 文件（CLAUDE.md、AGENTS.md、context/）
-- 階段 5：PopupPanel（待驗證）
+- 階段 6：拖放加入、TrayApp、開機自啟（待驗證）
+  - `ItemImporter`：拖放規則（exe/檔案/資料夾 → 捷徑、桌面捷徑 → 依模式、其他捷徑 → 複製）、同名編號
+  - `ShortcutFile`（IShellLinkW）；`Shell/` 集中 Shell 互通
+  - `TrayIcon`（Shell_NotifyIcon + 原生選單）、`AutoStart`（Run 機碼 + 工作管理員旗標）、單一執行個體
+  - `SettingsWindow`（根目錄、欄數、拖入模式、面板背景 + ChooseColor）、`NewFolderDialog`
+  - App 圖示 + `tools/make-icon.ps1`；manifest 加 Common Controls v6；移除暫時性結束選單
+  - 24 個新測試（共 72）
+- 階段 5：PopupPanel（使用者驗證通過）
   - `PopupPanel`（XAML）：標題、3 欄格子、4 列後捲動、空資料夾提示、Esc / 失焦收合、即時刷新
   - `PanelController`：一次一個面板、切換、啟動後收合
   - `PanelPlacement`：widget 下/上/左/右、夾回工作區
@@ -35,20 +42,21 @@
   - `SpikeTile` 顯示掃描結果供手動驗證
 
 ## In Progress
-- 階段 5 使用者驗證
+- 階段 6 使用者驗證
 
 ## Pending
-- 階段 6 ~ 7（見 `CLAUDE.md`「開發階段與進度」）
+- 階段 7（見 `CLAUDE.md`「開發階段與進度」）
 
 ## Completion %
-約 71%（5 / 7 階段）
+約 86%（6 / 7 階段）
 
 ## Milestones
 - 2026-10-24：階段 1 完成並驗證通過
 - 2026-10-24：階段 2 完成並驗證通過
 - 2026-10-24：階段 3 完成並驗證通過
 - 2026-10-24：階段 4 完成並驗證通過
-- 2026-10-25：階段 5 完成（待驗證）
+- 2026-10-25：階段 5 完成並驗證通過
+- 2026-10-25：階段 6 完成（待驗證）
 
 ## Last Update
 2026-10-24

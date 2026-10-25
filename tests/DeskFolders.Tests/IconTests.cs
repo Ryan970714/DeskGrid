@@ -3,6 +3,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using DeskFolders.Folders;
 using DeskFolders.Icons;
+using DeskFolders.Shell;
 using DeskFolders.Threading;
 
 namespace DeskFolders.Tests;

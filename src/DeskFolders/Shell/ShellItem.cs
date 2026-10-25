@@ -6,7 +6,7 @@ using DeskFolders.Diagnostics;
 using Windows.Win32;
 using Windows.Win32.UI.Shell;
 
-namespace DeskFolders.Panel;
+namespace DeskFolders.Shell;
 
 /// <summary>Shell operations on a folder item. Call on an STA thread (the UI thread is one).</summary>
 internal static class ShellItem

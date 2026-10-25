@@ -4,6 +4,16 @@
 
 ---
 
+**2026-10-25（階段 6）**
+**Goal**: 拖放加入、TrayApp、開機自啟。
+**Completed**: Tray/、Settings/、Shell/、ItemImporter、WidgetFolderName、App 圖示、單一執行個體；72 測試；實機驗證系統匣、設定、新增資料夾、開機自啟、OLE 拖放。
+**Modified**: App.xaml.cs（重寫）、DesktopHost、FolderWidget（拖放、移除結束選單）、WidgetBoard、app.manifest、csproj、Strings。
+**Decisions**: 拖放規則與 Run 機碼（使用者）；慣例預設、Shell/ 集中、XAML 不引用本地型別（見 decisions.md）。
+**Next Session**: 使用者驗證後開始階段 7，先確認 GitHub repo 與發布方式。
+**Issues**: 檔案總管桌面直接拖到 widget 未實機驗證；測試腳本誤送一次點擊到使用者視窗，之後停止模擬輸入。
+
+---
+
 **2026-10-25（階段 5）**
 **Goal**: PopupPanel（格子、啟動、收合）。
 **Completed**: Panel/（PopupPanel、PanelController、PanelPlacement、PanelTheme、Backdrop、ShellItem、PanelItem）、config `panelBackground`；48 測試通過；Acrylic 與 layered 實機全流程通過。

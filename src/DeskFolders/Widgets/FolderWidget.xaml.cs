@@ -5,7 +5,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using DeskFolders.Desktop;
 using DeskFolders.Diagnostics;
-using DeskFolders.Resources;
 using Windows.Win32;
 using Windows.Win32.UI.WindowsAndMessaging;
 
@@ -13,7 +12,8 @@ namespace DeskFolders.Widgets;
 
 /// <summary>
 /// A folder on the desktop: the 2×2 preview on a translucent tile, with the folder name below.
-/// Turns mouse input into a click or a drag; moving the window is up to the owner.
+/// Turns mouse input into a click or a drag and highlights as a drop target; moving the window and
+/// handling drops are up to the owner.
 /// </summary>
 internal partial class FolderWidget : UserControl
 {
@@ -35,10 +35,8 @@ internal partial class FolderWidget : UserControl
         Height = CellHeight;
         Label.MaxHeight = Label.FontSize * Label.FontFamily.LineSpacing * MaxLabelLines;
 
-        // Temporary way out until the tray icon exists (stage 6).
-        var exit = new MenuItem { Header = Strings.MenuExit };
-        exit.Click += (_, _) => Application.Current.Shutdown();
-        ContextMenu = new ContextMenu { Items = { exit } };
+        // The owner decides what a drop means; the widget only shows that it is a target.
+        AllowDrop = true;
     }
 
     public event EventHandler? Clicked;
@@ -63,6 +61,28 @@ internal partial class FolderWidget : UserControl
     protected override void OnMouseEnter(MouseEventArgs e) => Highlight.Background = HoverBrush;
 
     protected override void OnMouseLeave(MouseEventArgs e) => Highlight.Background = null;
+
+    protected override void OnDragEnter(DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            Highlight.Background = HoverBrush;
+        }
+
+        base.OnDragEnter(e);
+    }
+
+    protected override void OnDragLeave(DragEventArgs e)
+    {
+        Highlight.Background = null;
+        base.OnDragLeave(e);
+    }
+
+    protected override void OnDrop(DragEventArgs e)
+    {
+        Highlight.Background = null;
+        base.OnDrop(e);
+    }
 
     protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
     {
