@@ -485,3 +485,9 @@ $RECYCLE.BIN/
 artifacts/
 # Our publish profile has no secrets.
 !src/DeskGrid/Properties/PublishProfiles/win-x64.pubxml
+
+# Private AI working notes (kept local)
+/context/current-task.md
+/context/progress.md
+/context/todo.md
+/context/session-log.md
