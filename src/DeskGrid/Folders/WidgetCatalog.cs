@@ -96,8 +96,13 @@ internal sealed class WidgetCatalog : IDisposable
     internal static bool MoveInOrder(List<string> order, string name, int index)
     {
         var from = order.FindIndex(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase));
+        if (from < 0)
+        {
+            return false;
+        }
+
         var to = Math.Clamp(index, 0, order.Count - 1);
-        if (from < 0 || from == to)
+        if (from == to)
         {
             return false;
         }

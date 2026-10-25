@@ -51,28 +51,30 @@ internal static class UpdateChecker
     {
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
-        if (Flag(root, "draft") || Flag(root, "prerelease")
-            || root.GetProperty("tag_name").GetString() is not { } tag
+        if (root.ValueKind != JsonValueKind.Object
+            || Flag(root, "draft") || Flag(root, "prerelease")
+            || Text(root, "tag_name") is not { } tag
             || !Version.TryParse(tag.TrimStart('v', 'V'), out var version))
         {
             return null;
         }
 
         string? exeUrl = null, sha256 = null;
-        if (root.TryGetProperty("assets", out var list))
+        if (root.TryGetProperty("assets", out var list) && list.ValueKind == JsonValueKind.Array)
         {
             foreach (var asset in list.EnumerateArray())
             {
-                if (asset.GetProperty("name").GetString() is { } name && name.EndsWith(ExeSuffix, StringComparison.OrdinalIgnoreCase))
+                if (asset.ValueKind == JsonValueKind.Object && Text(asset, "name") is { } name
+                    && name.EndsWith(ExeSuffix, StringComparison.OrdinalIgnoreCase))
                 {
-                    exeUrl = asset.GetProperty("browser_download_url").GetString();
-                    sha256 = asset.TryGetProperty("digest", out var digest) ? ParseDigest(digest.GetString()) : null;
+                    exeUrl = Text(asset, "browser_download_url");
+                    sha256 = ParseDigest(Text(asset, "digest"));
                     break;
                 }
             }
         }
 
-        return new ReleaseInfo(Normalize(version), tag, root.GetProperty("html_url").GetString() ?? "", exeUrl, sha256);
+        return new ReleaseInfo(Normalize(version), tag, Text(root, "html_url") ?? "", exeUrl, sha256);
     }
 
     /// <summary>The hash of a GitHub asset digest ("sha256:&lt;hex&gt;"), lower case; <see langword="null"/> if it is anything else.</summary>
@@ -85,6 +87,10 @@ internal static class UpdateChecker
 
     // Major.minor.build: the fourth part of an assembly version is always 0 for us, and tags have three.
     private static Version Normalize(Version version) => new(version.Major, version.Minor, Math.Max(version.Build, 0));
+
+    // The string property, or null if it is missing or not a string.
+    private static string? Text(JsonElement element, string name) =>
+        element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
 
     private static bool Flag(JsonElement element, string name) =>
         element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.True;

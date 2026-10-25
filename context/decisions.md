@@ -291,3 +291,12 @@
 **Alternatives**: 內建更新程式 exe（多一個檔要發布）；不驗校驗碼（下載被竄改無從發現）；`WM_COPYDATA` 等。
 **Consequences**: config 新增 `skippedUpdateVersion`（使用者同意）；未簽章 exe 的更新不受 SmartScreen 保護，靠 SHA256 與 GitHub HTTPS；真正的換檔流程要等有比 0.1.0 新的 release 才能實測。
 **Author**: Claude（使用者要求功能）
+
+---
+
+### 2026-10-25 — 磁碟 / 登錄檔 / 網路失敗：記 log 繼續跑，不讓 app 崩潰
+**Decision**: `ConfigStore.Save` 遇 `IOException` / `UnauthorizedAccessException`（同步軟體或防毒鎖檔、磁碟滿）只記 log，下次存檔會整份重寫；`AutoStart` 登錄檔存取被拒回傳 `false`；`UpdateChecker.ParseRelease` 對缺欄位 / 型別不符的 JSON 回傳 `null`；更新腳本以 UTF-8 BOM 寫出（Windows PowerShell 5.1 對無 BOM 檔用 ANSI，非 ASCII 使用者名稱會讓路徑亂碼）；log 超過 512 KB 輪替成 `.old`。
+**Reason**: 全域未處理例外會結束程式（維持 fail-fast），所以可預期的環境失敗要在來源處接住，否則一次存檔失敗就讓桌面上的 widget 全部消失。
+**Alternatives**: 把 `DispatcherUnhandledException` 設成 Handled（連真正的程式錯誤也吞掉，計時器例外會洗版）；`Save` 回傳成功與否（呼叫端無從補救）。
+**Consequences**: 存檔失敗時使用者看不到提示，只在 log；設定可能在該次執行中途遺失。
+**Author**: Claude（使用者要求找 bug 並修正）

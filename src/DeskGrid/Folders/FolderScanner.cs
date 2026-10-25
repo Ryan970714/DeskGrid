@@ -108,21 +108,22 @@ internal sealed class FolderScanner : IDisposable
     {
         var oldSegments = RelativeSegments(e.OldFullPath);
         var newSegments = RelativeSegments(e.FullPath);
-        if (newSegments.Length > 2)
-        {
-            return;
-        }
-
-        if (newSegments.Length == 1)
+        if (oldSegments.Length == 1 && newSegments.Length == 1)
         {
             Post(() => WidgetRenamed?.Invoke(this, new WidgetRenamedEventArgs(oldSegments[0], newSegments[0])));
         }
-        else
+        else if (oldSegments.Length == 2 && newSegments.Length == 2
+            && string.Equals(oldSegments[0], newSegments[0], StringComparison.OrdinalIgnoreCase))
         {
             Post(() => ItemRenamed?.Invoke(this, new ItemRenamedEventArgs(newSegments[0], oldSegments[1], newSegments[1])));
         }
 
-        RestartDebounce();
+        // Anything else (an item moved to another folder or level) is no rename of a widget or item;
+        // the rescan below sees its effect.
+        if (newSegments.Length <= 2 || oldSegments.Length <= 2)
+        {
+            RestartDebounce();
+        }
     }
 
     private void OnWatcherError(object sender, ErrorEventArgs e)

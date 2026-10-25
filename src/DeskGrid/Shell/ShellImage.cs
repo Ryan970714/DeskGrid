@@ -19,7 +19,7 @@ internal static class ShellImage
     private const byte FrameAlpha = 20;
 
     /// <summary>
-    /// Returns a frozen <paramref name="size"/>Â² icon (a shortcut's target icon, without the arrow
+    /// Returns a frozen <paramref name="size"/>×<paramref name="size"/> icon (a shortcut's target icon, without the arrow
     /// overlay), or <see langword="null"/> if the Shell can't produce one. Never a content thumbnail.
     /// </summary>
     public static BitmapSource? GetIcon(string path, int size)

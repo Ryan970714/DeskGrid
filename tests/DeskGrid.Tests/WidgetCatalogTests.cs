@@ -39,6 +39,48 @@ public sealed class WidgetCatalogTests : IDisposable
     }
 
     [Fact]
+    public void MoveInOrder_EmptyOrder_DoesNothing() =>
+        Assert.False(WidgetCatalog.MoveInOrder([], "a", 0));
+
+    [Fact]
+    public async Task MovingItemOutOfWidgetFolder_KeepsTheWidgetsSettings()
+    {
+        _temp.CreateFile(@"root\Games\a.lnk");
+        _temp.CreateFile(@"root\Games\b.lnk");
+        var catalog = await StartCatalogAsync(config =>
+            config.Widgets["Games"] = new WidgetConfig { Position = new ScreenPoint(5, 6), ItemOrder = ["b.lnk", "a.lnk"] });
+
+        // A move to the root is reported as one rename, but it renames no widget.
+        File.Move(Path.Combine(RootPath, @"Games\a.lnk"), Path.Combine(RootPath, "a.lnk"));
+        await WaitUntilAsync(catalog, () => catalog.Widgets[0].Items.Count == 1);
+
+        var saved = ConfigStore.Open(ConfigPath).Config;
+        Assert.Equal(["Games"], saved.Widgets.Keys);
+        Assert.Equal(new ScreenPoint(5, 6), saved.Widgets["Games"].Position);
+        Assert.Equal(["b.lnk"], saved.Widgets["Games"].ItemOrder);
+    }
+
+    [Fact]
+    public async Task MovingItemToAnotherWidgetFolder_UpdatesBothOrders()
+    {
+        _temp.CreateFile(@"root\Games\a.lnk");
+        _temp.CreateFile(@"root\Games\b.lnk");
+        _temp.CreateFile(@"root\Work\x.lnk");
+        var catalog = await StartCatalogAsync(config =>
+        {
+            config.Widgets["Games"] = new WidgetConfig { ItemOrder = ["b.lnk", "a.lnk"] };
+            config.Widgets["Work"] = new WidgetConfig { ItemOrder = ["x.lnk"] };
+        });
+
+        File.Move(Path.Combine(RootPath, @"Games\a.lnk"), Path.Combine(RootPath, @"Work\a.lnk"));
+        await WaitUntilAsync(catalog, () => catalog.Widgets.Single(w => w.Name == "Work").Items.Count == 2);
+
+        var saved = ConfigStore.Open(ConfigPath).Config;
+        Assert.Equal(["b.lnk"], saved.Widgets["Games"].ItemOrder);
+        Assert.Equal(["x.lnk", "a.lnk"], saved.Widgets["Work"].ItemOrder);
+    }
+
+    [Fact]
     public void Reconcile_NewFolder_GetsSettingsWithItemsInScanOrder()
     {
         var settings = Settings();

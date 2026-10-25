@@ -92,14 +92,7 @@ internal static class UpdateInstaller
         try
         {
             var script = Path.Combine(WorkFolder, "apply-update.ps1");
-            File.WriteAllText(script, $$"""
-                Wait-Process -Id {{Environment.ProcessId}} -ErrorAction SilentlyContinue
-                for ($i = 0; $i -lt 40; $i++) {
-                    try { Move-Item -LiteralPath {{Quote(newExe)}} -Destination {{Quote(Environment.ProcessPath!)}} -Force -ErrorAction Stop; break }
-                    catch { Start-Sleep -Milliseconds 500 }
-                }
-                Start-Process -FilePath {{Quote(Environment.ProcessPath!)}}
-                """);
+            WriteScript(script, Environment.ProcessId, newExe, Environment.ProcessPath!);
             Process.Start(new ProcessStartInfo("powershell.exe")
             {
                 ArgumentList = { "-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", script },
@@ -114,6 +107,18 @@ internal static class UpdateInstaller
             return exception.Message;
         }
     }
+
+    // Windows PowerShell reads a script without a byte order mark in the system's ANSI code page, which would
+    // garble a path with non-ASCII characters (e.g. a Chinese user name), so the script is written as UTF-8 with one.
+    internal static void WriteScript(string scriptPath, int processId, string newExe, string targetExe) =>
+        File.WriteAllText(scriptPath, $$"""
+            Wait-Process -Id {{processId}} -ErrorAction SilentlyContinue
+            for ($i = 0; $i -lt 40; $i++) {
+                try { Move-Item -LiteralPath {{Quote(newExe)}} -Destination {{Quote(targetExe)}} -Force -ErrorAction Stop; break }
+                catch { Start-Sleep -Milliseconds 500 }
+            }
+            Start-Process -FilePath {{Quote(targetExe)}}
+            """, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
 
     // A PowerShell single-quoted string.
     private static string Quote(string value) => "'" + value.Replace("'", "''") + "'";

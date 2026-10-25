@@ -74,10 +74,15 @@ public sealed class PanelThemeTests
         Assert.True(dim.IsDark);
     }
 
-    [Fact]
-    public void Custom_InvalidColor_FallsBackToTheDefault()
+    [Theory]
+    [InlineData("not a color")]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("#12")]
+    [InlineData("#GGGGGG")]
+    public void Custom_InvalidColor_FallsBackToTheDefault(string color)
     {
-        var theme = PanelTheme.Resolve(Custom("not a color", 1), systemDark: false, acrylicSupported: false);
+        var theme = PanelTheme.Resolve(Custom(color, 1), systemDark: false, acrylicSupported: false);
 
         Assert.Equal(ColorConverter.ConvertFromString(new PanelBackground().CustomColor), theme.Background);
     }

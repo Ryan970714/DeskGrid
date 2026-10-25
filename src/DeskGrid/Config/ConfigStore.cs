@@ -54,13 +54,32 @@ internal sealed class ConfigStore
         }
     }
 
+    /// <summary>
+    /// Writes the config. A file that can't be written right now (locked by a sync client or virus scanner,
+    /// disk full) is logged, not thrown: the next save writes everything again.
+    /// </summary>
     public void Save()
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-
-        // Write-then-rename: a crash mid-write never leaves a truncated config behind.
         var tempPath = FilePath + ".tmp";
-        File.WriteAllText(tempPath, JsonSerializer.Serialize(Config, JsonOptions));
-        File.Move(tempPath, FilePath, overwrite: true);
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
+
+            // Write-then-rename: a crash mid-write never leaves a truncated config behind.
+            File.WriteAllText(tempPath, JsonSerializer.Serialize(Config, JsonOptions));
+            File.Move(tempPath, FilePath, overwrite: true);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Log.Error($"Saving {FilePath} failed", exception);
+            try
+            {
+                File.Delete(tempPath);
+            }
+            catch (Exception cleanup) when (cleanup is IOException or UnauthorizedAccessException)
+            {
+                // Leftover temp file; overwritten by the next save.
+            }
+        }
     }
 }

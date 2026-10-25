@@ -68,17 +68,16 @@ internal static class ItemImporter
         var added = new List<string>();
         foreach (var path in paths)
         {
-            var action = Plan(path, widgetFolder, mode, desktops, rootFolder);
-            if (action == ImportAction.None)
-            {
-                continue;
-            }
-
             try
             {
-                added.Add(Apply(action, path, widgetFolder));
+                var action = Plan(path, widgetFolder, mode, desktops, rootFolder);
+                if (action != ImportAction.None)
+                {
+                    added.Add(Apply(action, path, widgetFolder));
+                }
             }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or COMException)
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or COMException
+                or ArgumentException or NotSupportedException)
             {
                 Log.Error($"Adding {path} to {widgetFolder} failed", exception);
             }

@@ -54,3 +54,68 @@ public sealed class FolderScannerTests : IDisposable
     public void Constructor_RequiresSynchronizationContext() =>
         Assert.Throws<InvalidOperationException>(() => new FolderScanner(_root.Path));
 }
+
+public sealed class FolderScannerRenameTests : IDisposable
+{
+    private readonly TempDirectory _root = new();
+    private readonly DispatcherThread _ui = new("Test UI");
+
+    public void Dispose()
+    {
+        _ui.Dispose();
+        _root.Dispose();
+    }
+
+    [Fact]
+    public async Task MovingAnItemToTheRoot_IsNoWidgetRename()
+    {
+        _root.CreateFile(@"Games\a.lnk");
+        var renames = await WatchAsync(() => File.Move(_root.Combine(@"Games\a.lnk"), _root.Combine("a.lnk")));
+
+        Assert.Empty(renames);
+    }
+
+    [Fact]
+    public async Task MovingAnItemToAnotherWidget_IsNoItemRename()
+    {
+        _root.CreateFile(@"Games\a.lnk");
+        Directory.CreateDirectory(_root.Combine("Work"));
+        var renames = await WatchAsync(() => File.Move(_root.Combine(@"Games\a.lnk"), _root.Combine(@"Work\a.lnk")));
+
+        Assert.Empty(renames);
+    }
+
+    [Fact]
+    public async Task RenamingAnItemOrAWidget_IsReported()
+    {
+        _root.CreateFile(@"Games\a.lnk");
+        var renames = await WatchAsync(() =>
+        {
+            File.Move(_root.Combine(@"Games\a.lnk"), _root.Combine(@"Games\b.lnk"));
+            Directory.Move(_root.Combine("Games"), _root.Combine("Play"));
+        });
+
+        Assert.Equal(["Games/a.lnk>b.lnk", "Games>Play"], renames);
+    }
+
+    // Starts a scanner, runs the file system change, and returns the renames it reported once the change has settled.
+    private async Task<List<string>> WatchAsync(Action change)
+    {
+        var renames = new List<string>();
+        var settled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var scanner = await _ui.InvokeAsync(() =>
+        {
+            var scanner = new FolderScanner(_root.Path);
+            scanner.WidgetRenamed += (_, e) => renames.Add($"{e.OldName}>{e.NewName}");
+            scanner.ItemRenamed += (_, e) => renames.Add($"{e.WidgetName}/{e.OldName}>{e.NewName}");
+            scanner.Changed += (_, _) => settled.TrySetResult();
+            scanner.Start();
+            return scanner;
+        });
+
+        change();
+        await settled.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        await _ui.InvokeAsync(scanner.Dispose);
+        return renames;
+    }
+}

@@ -6,6 +6,9 @@ namespace DeskGrid.Diagnostics;
 /// <summary>Minimal append-only log at <c>%LOCALAPPDATA%\DeskGrid\deskgrid.log</c>.</summary>
 internal static class Log
 {
+    // Past this size the current log becomes "<name>.old" (replacing the previous one), so the log can't grow forever.
+    internal const long MaxBytes = 512 * 1024;
+
     private static readonly Lock Gate = new();
 
     // Settable so tests don't write into the real log.
@@ -27,6 +30,11 @@ internal static class Log
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
+                if (new FileInfo(FilePath) is { Exists: true, Length: > MaxBytes })
+                {
+                    File.Move(FilePath, FilePath + ".old", overwrite: true);
+                }
+
                 File.AppendAllText(FilePath, line + Environment.NewLine);
             }
             catch (IOException)

@@ -1,3 +1,6 @@
+using System.IO;
+using System.Security;
+using DeskGrid.Diagnostics;
 using Microsoft.Win32;
 
 namespace DeskGrid.Tray;
@@ -22,7 +25,8 @@ internal sealed class AutoStart(RegistryKey root, string command)
 
     private string? RunValue => ReadValue(RunKey) as string;
 
-    public void SetEnabled(bool enabled)
+    /// <summary>Turns the entry on or off. Returns <see langword="false"/> if the registry refused (e.g. by group policy).</summary>
+    public bool SetEnabled(bool enabled) => Try(() =>
     {
         using (var run = root.CreateSubKey(RunKey))
         {
@@ -39,15 +43,30 @@ internal sealed class AutoStart(RegistryKey root, string command)
         // Our switch is the truth from now on, so drop any Task Manager flag.
         using var approved = root.OpenSubKey(ApprovedKey, writable: true);
         approved?.DeleteValue(ValueName, throwOnMissingValue: false);
-    }
+    });
 
     /// <summary>Points an existing entry at this exe, in case the exe was moved since it was enabled.</summary>
-    public void UpdatePath()
+    public void UpdatePath() => Try(() =>
     {
         if (RunValue is { } current && current != command)
         {
             using var run = root.CreateSubKey(RunKey);
             run.SetValue(ValueName, command);
+        }
+    });
+
+    // Registry access can be denied; that must not take the app down.
+    private static bool Try(Action action)
+    {
+        try
+        {
+            action();
+            return true;
+        }
+        catch (Exception exception) when (exception is SecurityException or UnauthorizedAccessException or IOException)
+        {
+            Log.Error("Changing the auto-start entry failed", exception);
+            return false;
         }
     }
 

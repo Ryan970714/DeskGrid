@@ -46,6 +46,18 @@ public sealed class ConfigStoreTests : IDisposable
         Assert.Equal(["b.lnk", "a.lnk"], reloaded.Widgets["Games"].ItemOrder);
     }
 
+    [Fact]
+    public void Save_WhenTheFileCannotBeReplaced_LogsInsteadOfThrowing()
+    {
+        Directory.CreateDirectory(ConfigPath); // a directory where the file should go
+        var store = ConfigStore.Open(ConfigPath);
+
+        var exception = Record.Exception(store.Save);
+
+        Assert.Null(exception);
+        Assert.False(File.Exists(ConfigPath + ".tmp"));
+    }
+
     [Theory]
     [InlineData("{ not json")]
     [InlineData("""{ "rootPath": null }""")]
@@ -59,5 +71,31 @@ public sealed class ConfigStoreTests : IDisposable
         Assert.False(File.Exists(ConfigPath));
         var backup = Assert.Single(Directory.GetFiles(_temp.Path, "config.json.*.bad"));
         Assert.Equal(content, File.ReadAllText(backup));
+    }
+}
+
+public sealed class LogTests : IDisposable
+{
+    private readonly TempDirectory _temp = new();
+    private readonly string _original = DeskGrid.Diagnostics.Log.FilePath;
+
+    public void Dispose()
+    {
+        DeskGrid.Diagnostics.Log.FilePath = _original;
+        _temp.Dispose();
+    }
+
+    [Fact]
+    public void BigLog_IsRotatedToOldFile()
+    {
+        var path = _temp.Combine("deskgrid.log");
+        File.WriteAllText(path, new string('x', (int)DeskGrid.Diagnostics.Log.MaxBytes + 1));
+        DeskGrid.Diagnostics.Log.FilePath = path;
+
+        DeskGrid.Diagnostics.Log.Info("after rotation");
+
+        Assert.True(File.Exists(path + ".old"));
+        Assert.True(new FileInfo(path).Length < DeskGrid.Diagnostics.Log.MaxBytes);
+        Assert.Contains("after rotation", File.ReadAllText(path));
     }
 }

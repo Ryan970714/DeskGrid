@@ -43,7 +43,7 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
         var present = folders.Select(f => f.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var name in _entries.Keys.Where(n => !present.Contains(n)).ToList())
         {
-            host.Remove(_entries[name].Surface);
+            _entries[name].Release(host);
             _entries.Remove(name);
         }
 
@@ -81,7 +81,7 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
     {
         foreach (var entry in _entries.Values)
         {
-            host.Remove(entry.Surface);
+            entry.Release(host);
         }
 
         _entries.Clear();
@@ -333,6 +333,13 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
         public FolderWidget View { get; }
 
         public DesktopSurface Surface { get; }
+
+        // Takes the widget off the desktop; a pending "hold to open" must not fire for it afterwards.
+        public void Release(DesktopHost host)
+        {
+            _hover.Stop();
+            host.Remove(Surface);
+        }
 
         public void Update(WidgetFolder folder, Task<BitmapSource> preview)
         {

@@ -19,6 +19,7 @@ internal enum UpdateChoice
 internal partial class UpdateDialog : Window
 {
     private readonly Func<IProgress<double>, Task<string?>> _download;
+    private bool _downloading;
 
     /// <param name="download">Fetches the new version; returns why it failed, or <see langword="null"/>.</param>
     public UpdateDialog(ReleaseInfo release, Func<IProgress<double>, Task<string?>> download)
@@ -36,14 +37,31 @@ internal partial class UpdateDialog : Window
 
     public UpdateChoice Choice { get; private set; } = UpdateChoice.Later;
 
+    // The download can't be cancelled, and its result has nowhere to go once the dialog is gone.
+    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+    {
+        e.Cancel = _downloading;
+        base.OnClosing(e);
+    }
+
     private async void OnUpdate(object sender, RoutedEventArgs e)
     {
         Error.Visibility = Visibility.Collapsed;
-        UpdateButton.IsEnabled = KeepButton.IsEnabled = false;
+        _downloading = true;
+        UpdateButton.IsEnabled = KeepButton.IsEnabled = LaterButton.IsEnabled = false;
         ProgressArea.Visibility = Visibility.Visible;
         Progress.Value = 0;
 
-        var problem = await _download(new Progress<double>(value => Progress.Value = value));
+        string? problem;
+        try
+        {
+            problem = await _download(new Progress<double>(value => Progress.Value = value));
+        }
+        finally
+        {
+            _downloading = false;
+        }
+
         if (problem is null)
         {
             Choice = UpdateChoice.Update;
@@ -54,7 +72,7 @@ internal partial class UpdateDialog : Window
         ProgressArea.Visibility = Visibility.Collapsed;
         Error.Text = string.Format(Strings.UpdateFailed, problem);
         Error.Visibility = Visibility.Visible;
-        UpdateButton.IsEnabled = KeepButton.IsEnabled = true;
+        UpdateButton.IsEnabled = KeepButton.IsEnabled = LaterButton.IsEnabled = true;
     }
 
     private void OnKeep(object sender, RoutedEventArgs e)

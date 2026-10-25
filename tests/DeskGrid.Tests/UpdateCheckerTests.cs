@@ -1,3 +1,4 @@
+using System.IO;
 using DeskGrid.Updates;
 
 namespace DeskGrid.Tests;
@@ -53,6 +54,26 @@ public sealed class UpdateCheckerTests
     }
 
     [Theory]
+    [InlineData("{}")]
+    [InlineData("[]")]
+    [InlineData("null")]
+    [InlineData("""{ "tag_name": null }""")]
+    [InlineData("""{ "tag_name": 5 }""")]
+    public void ParseRelease_UnexpectedShape_IsNoRelease(string json) =>
+        Assert.Null(UpdateChecker.ParseRelease(json));
+
+    [Fact]
+    public void ParseRelease_OddAssets_AreSkipped()
+    {
+        var release = UpdateChecker.ParseRelease(
+            """{ "tag_name": "v1.0.0", "assets": [ 7, {}, { "name": null }, { "name": "DeskGrid-1.0.0-win-x64.exe" } ] }""");
+
+        Assert.NotNull(release);
+        Assert.Equal("", release.PageUrl);
+        Assert.Null(release.ExeUrl);
+    }
+
+    [Theory]
     [InlineData("""{ "tag_name": "v1.0.0", "html_url": "u", "draft": true }""")]
     [InlineData("""{ "tag_name": "v1.0.0", "html_url": "u", "prerelease": true }""")]
     [InlineData("""{ "tag_name": "nightly", "html_url": "u" }""")]
@@ -76,5 +97,28 @@ public sealed class UpdateCheckerTests
         Assert.Null(UpdateChecker.ParseDigest("sha1:" + new string('a', 40)));
         Assert.Null(UpdateChecker.ParseDigest("sha256:short"));
         Assert.Null(UpdateChecker.ParseDigest(null));
+    }
+}
+
+public sealed class UpdateInstallerTests : IDisposable
+{
+    private readonly TempDirectory _temp = new();
+
+    public void Dispose() => _temp.Dispose();
+
+    [Fact]
+    public void WriteScript_IsUtf8WithByteOrderMark_AndQuotesPaths()
+    {
+        var script = _temp.Combine("apply-update.ps1");
+        const string Target = @"C:\Users\王小明\O'Neil\DeskGrid.exe";
+
+        UpdateInstaller.WriteScript(script, 1234, @"C:\Temp\DeskGrid-0.3.0.exe", Target);
+
+        var bytes = File.ReadAllBytes(script);
+        Assert.Equal([0xEF, 0xBB, 0xBF], bytes[..3]);
+        var text = System.Text.Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
+        Assert.Contains("Wait-Process -Id 1234", text);
+        Assert.Contains(@"-Destination 'C:\Users\王小明\O''Neil\DeskGrid.exe'", text);
+        Assert.Contains(@"Start-Process -FilePath 'C:\Users\王小明\O''Neil\DeskGrid.exe'", text);
     }
 }
