@@ -4,6 +4,16 @@
 
 ---
 
+**2026-10-25（更名 DeskGrid）**
+**Goal**: 專案與 repo 全面改名 DeskFolders → DeskGrid。
+**Completed**: 內容、資料夾、solution/csproj/ico 全改名；GitHub repo 改名並更新 remote；build 0 警告、72 測試通過。
+**Modified**: 全專案、context 文件。
+**Decisions**: 見 decisions.md「專案更名」。
+**Next Session**: 使用者驗證；舊資料夾 `%USERPROFILE%\DeskFolders`、`%APPDATA%\DeskFolders` 需手動搬到 DeskGrid。
+**Issues**: v0.1.0 Release 的 exe 仍叫 DeskFolders，下次發版才是 DeskGrid。
+
+---
+
 **2026-10-25（v0.1.0）**
 **Goal**: 發布第一個公開 Release。
 **Completed**: 推 `v0.1.0` tag，Release workflow 通過；Release 附 62 MB exe 與 .sha256，下載核對一致，檔案版本 0.1.0。
