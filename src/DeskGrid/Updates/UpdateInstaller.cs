@@ -18,7 +18,7 @@ internal static class UpdateInstaller
 
     /// <summary>Whether the running program is the published single-file exe, which an update can replace.</summary>
     public static bool CanReplaceSelf =>
-        string.IsNullOrEmpty(typeof(UpdateInstaller).Assembly.Location) && Environment.ProcessPath is not null;
+        Environment.ProcessPath is not null && !File.Exists(Path.Combine(AppContext.BaseDirectory, "DeskGrid.dll"));
 
     private static string WorkFolder { get; } = Path.Combine(Path.GetTempPath(), "DeskGrid-update");
 
