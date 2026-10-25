@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DeskGrid/DeskGrid.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DeskGrid.Tests/DeskGrid.Tests.csproj">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
+</Solution>

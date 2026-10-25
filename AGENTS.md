@@ -11,13 +11,13 @@
 
 專案慣例：
 
-- 每個模組一個資料夾，file-scoped namespace `DeskFolders.<Folder>`
+- 每個模組一個資料夾，file-scoped namespace `DeskGrid.<Folder>`
 - 類別預設 `internal sealed`；private 欄位 `_camelCase`
-- Win32 API 一律透過 CsWin32（加到 `src/DeskFolders/NativeMethods.txt`），不手寫 `DllImport`
+- Win32 API 一律透過 CsWin32（加到 `src/DeskGrid/NativeMethods.txt`），不手寫 `DllImport`
 - 建置零警告（`TreatWarningsAsErrors`）；CA1416 已在 `Directory.Build.props` 以註解說明原因後關閉
 - 純邏輯（Config、Folders 等）要有 xUnit 測試；使用者介面文字一律放 `Resources/Strings*.resx`（en + zh-TW）
-- XAML 不可引用本組件的型別（含 `x:Static` 到 `Strings`、`clr-namespace:DeskFolders.*`），文字在 code-behind 設定（原因見 CLAUDE.md 階段 6）
-- 實機測試若要模擬滑鼠鍵盤：先問使用者；每次點擊 / 按鍵前確認游標下或前景是 DeskFolders 的視窗；使用者正在用電腦時不要做
+- XAML 不可引用本組件的型別（含 `x:Static` 到 `Strings`、`clr-namespace:DeskGrid.*`），文字在 code-behind 設定（原因見 CLAUDE.md 階段 6）
+- 實機測試若要模擬滑鼠鍵盤：先問使用者；每次點擊 / 按鍵前確認游標下或前景是 DeskGrid 的視窗；使用者正在用電腦時不要做
 - 不使用第三方 UI 框架
 
 # 修改程式前

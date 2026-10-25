@@ -484,4 +484,4 @@ $RECYCLE.BIN/
 # Publish output (dotnet publish -p:PublishProfile=win-x64)
 artifacts/
 # Our publish profile has no secrets.
-!src/DeskFolders/Properties/PublishProfiles/win-x64.pubxml
+!src/DeskGrid/Properties/PublishProfiles/win-x64.pubxml

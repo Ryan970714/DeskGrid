@@ -19,15 +19,15 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Test
-        run: dotnet test DeskFolders.slnx -c Release
+        run: dotnet test DeskGrid.slnx -c Release
 
       - name: Publish single exe
         shell: pwsh
         run: |
           $version = '${{ github.ref_name }}'.TrimStart('v')
-          dotnet publish src/DeskFolders/DeskFolders.csproj -p:PublishProfile=win-x64 -p:Version=$version
-          $asset = "artifacts/DeskFolders-$version-win-x64.exe"
-          Move-Item artifacts/publish/DeskFolders.exe $asset
+          dotnet publish src/DeskGrid/DeskGrid.csproj -p:PublishProfile=win-x64 -p:Version=$version
+          $asset = "artifacts/DeskGrid-$version-win-x64.exe"
+          Move-Item artifacts/publish/DeskGrid.exe $asset
           (Get-FileHash $asset -Algorithm SHA256).Hash.ToLower() + "  " + (Split-Path $asset -Leaf) | Set-Content "$asset.sha256" -Encoding ascii
           "ASSET=$asset" >> $env:GITHUB_ENV
 

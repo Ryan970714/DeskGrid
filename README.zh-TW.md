@@ -1,4 +1,4 @@
-# DeskFolders
+# DeskGrid
 
 [English](README.md)
 
@@ -20,8 +20,8 @@ Windows 10 22H2 或 Windows 11，64 位元。不需安裝 .NET：下載的是自
 
 ## 安裝
 
-1. 到 [Releases](../../releases) 下載 `DeskFolders-<版本>-win-x64.exe`。
-2. 放到任意位置（例如 `%LOCALAPPDATA%\Programs\DeskFolders\`）後執行。
+1. 到 [Releases](../../releases) 下載 `DeskGrid-<版本>-win-x64.exe`。
+2. 放到任意位置（例如 `%LOCALAPPDATA%\Programs\DeskGrid\`）後執行。
 3. 可選：在系統匣選單開啟 **開機時啟動**。
 
 ### 「Windows 已保護您的電腦」
@@ -33,14 +33,14 @@ SmartScreen 會跳出警告。要繼續執行，請按 **其他資訊** → **�
 每個 Release 都附有 `.sha256` 檔。檢查下載的檔案是否一致：
 
 ```powershell
-Get-FileHash .\DeskFolders-0.1.0-win-x64.exe -Algorithm SHA256
+Get-FileHash .\DeskGrid-0.1.0-win-x64.exe -Algorithm SHA256
 ```
 
 如果不想信任現成的執行檔，也可以[自己從原始碼建置](#從原始碼建置)。
 
 ## 使用方式
 
-第一次執行時會建立 `%USERPROFILE%\DeskFolders\`。**其中每個子資料夾都會成為桌面上的一個資料夾**，
+第一次執行時會建立 `%USERPROFILE%\DeskGrid\`。**其中每個子資料夾都會成為桌面上的一個資料夾**，
 裡面的檔案就是它的項目。
 
 | 想要 | 做法 |
@@ -71,14 +71,14 @@ Get-FileHash .\DeskFolders-0.1.0-win-x64.exe -Algorithm SHA256
 
 | 內容 | 位置 |
 |---|---|
-| 設定與資料夾位置 | `%APPDATA%\DeskFolders\config.json` |
-| Log | `%LOCALAPPDATA%\DeskFolders\deskfolders.log` |
-| 你的資料夾 | `%USERPROFILE%\DeskFolders\`（或你選擇的根目錄） |
+| 設定與資料夾位置 | `%APPDATA%\DeskGrid\config.json` |
+| Log | `%LOCALAPPDATA%\DeskGrid\deskgrid.log` |
+| 你的資料夾 | `%USERPROFILE%\DeskGrid\`（或你選擇的根目錄） |
 
 ### 解除安裝
 
 關閉 **開機時啟動**、從系統匣選單結束，然後刪除 exe。若也要移除設定，再刪除
-`%APPDATA%\DeskFolders` 與 `%LOCALAPPDATA%\DeskFolders`。你的資料夾與其中的檔案不會被動到。
+`%APPDATA%\DeskGrid` 與 `%LOCALAPPDATA%\DeskGrid`。你的資料夾與其中的檔案不會被動到。
 
 ## 已知限制
 
@@ -95,9 +95,9 @@ Get-FileHash .\DeskFolders-0.1.0-win-x64.exe -Algorithm SHA256
 需要 [.NET 10 SDK](https://dotnet.microsoft.com/download)。
 
 ```powershell
-dotnet build DeskFolders.slnx
-dotnet test DeskFolders.slnx
-dotnet publish src/DeskFolders/DeskFolders.csproj -p:PublishProfile=win-x64   # -> artifacts/publish/DeskFolders.exe
+dotnet build DeskGrid.slnx
+dotnet test DeskGrid.slnx
+dotnet publish src/DeskGrid/DeskGrid.csproj -p:PublishProfile=win-x64   # -> artifacts/publish/DeskGrid.exe
 ```
 
 推送 `v0.1.0` 這類 tag 時，GitHub Actions 會自動發布 Release。
@@ -106,7 +106,7 @@ dotnet publish src/DeskFolders/DeskFolders.csproj -p:PublishProfile=win-x64   # 
 
 每個資料夾都是一個逐像素透明的小型 WPF 視窗，掛在檔案總管放桌面圖示的 `SHELLDLL_DefView` 底下、
 圖示清單的上方。這讓它位於其他視窗後方卻仍可點擊，而且同時適用傳統桌面結構與 Windows 11 24H2
-的新結構。檔案總管重新啟動時會連同這些視窗一起銷毀，DeskFolders 會自動重新掛上。
+的新結構。檔案總管重新啟動時會連同這些視窗一起銷毀，DeskGrid 會自動重新掛上。
 設計筆記與決策紀錄在 `CLAUDE.md` 與 `context/`。
 
 ## 授權

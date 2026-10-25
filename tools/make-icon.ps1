@@ -1,6 +1,6 @@
 # Renders the app icon (a rounded tile holding a 2x2 grid) into a multi-size .ico.
 # Usage: powershell -NoProfile -File tools/make-icon.ps1
-param([string]$OutFile = "$PSScriptRoot\..\src\DeskFolders\Assets\DeskFolders.ico")
+param([string]$OutFile = "$PSScriptRoot\..\src\DeskGrid\Assets\DeskGrid.ico")
 
 Add-Type -AssemblyName PresentationCore, PresentationFramework, WindowsBase
 

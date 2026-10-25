@@ -19,16 +19,16 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Build
-        run: dotnet build DeskFolders.slnx -c Release
+        run: dotnet build DeskGrid.slnx -c Release
 
       - name: Test
-        run: dotnet test DeskFolders.slnx -c Release --no-build
+        run: dotnet test DeskGrid.slnx -c Release --no-build
 
       - name: Publish single exe
-        run: dotnet publish src/DeskFolders/DeskFolders.csproj -p:PublishProfile=win-x64
+        run: dotnet publish src/DeskGrid/DeskGrid.csproj -p:PublishProfile=win-x64
 
       - uses: actions/upload-artifact@v7
         with:
-          name: DeskFolders-win-x64
-          path: artifacts/publish/DeskFolders.exe
+          name: DeskGrid-win-x64
+          path: artifacts/publish/DeskGrid.exe
           if-no-files-found: error

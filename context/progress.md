@@ -62,7 +62,7 @@
 - 2026-10-24：階段 4 完成並驗證通過
 - 2026-10-25：階段 5 完成並驗證通過
 - 2026-10-25：階段 6 完成並驗證通過
-- 2026-10-25：階段 7 完成，推上 https://github.com/Ryan970714/DeskFolders，CI 通過
+- 2026-10-25：階段 7 完成，推上 https://github.com/Ryan970714/DeskGrid，CI 通過
 - 2026-10-25：發布 v0.1.0（Release workflow 通過，SHA256 核對一致）
 
 ## Last Update

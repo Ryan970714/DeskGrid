@@ -7,8 +7,8 @@ MVP（階段 1–7）完成；首個公開版本 v0.1.0 已發布。
 等待使用者驗證階段 7 與 v0.1.0，決定 MVP 後要先做哪些改進。
 
 ## Current Status
-- 公開 repo：https://github.com/Ryan970714/DeskFolders
-- Release v0.1.0：https://github.com/Ryan970714/DeskFolders/releases/tag/v0.1.0（非草稿、非預覽版），附 `DeskFolders-0.1.0-win-x64.exe`（62 MB）與 `.sha256`
+- 公開 repo：https://github.com/Ryan970714/DeskGrid
+- Release v0.1.0：https://github.com/Ryan970714/DeskGrid/releases/tag/v0.1.0（非草稿、非預覽版），附 `DeskGrid-0.1.0-win-x64.exe`（62 MB）與 `.sha256`
 - 下載後核對：SHA256 一致；檔案版本 0.1.0、版權 Ryan Kuo
 - CI（push main）與 Release workflow（v* tag）都已實際跑過並通過
 
@@ -22,4 +22,4 @@ MVP（階段 1–7）完成；首個公開版本 v0.1.0 已發布。
 無。
 
 ## Last Update
-2026-10-25
+2026-10-25（已更名 DeskGrid）

@@ -255,3 +255,12 @@
 **Author**: Claude
 
 ---
+
+---
+
+### 2026-10-25 — 專案更名 DeskFolders → DeskGrid
+**Decision**: 專案、GitHub repo、solution/csproj/namespace、exe、app 資料路徑全部改為 `DeskGrid`（大小寫一致；log 檔 `deskgrid.log`）。
+**Reason**: 使用者要求更名。
+**Alternatives**: 只改 repo 與顯示名稱、保留內部 `DeskFolders` 識別碼（會造成名稱不一致）。
+**Consequences**: 本檔與 `session-log.md` 之前的紀錄依「只能新增」規則保留舊名 `DeskFolders`，不回改。Config 改存 `%APPDATA%\DeskGrid\`、log 在 `%LOCALAPPDATA%\DeskGrid\`、預設根目錄 `%USERPROFILE%\DeskGrid\`、開機自啟登錄值名 `DeskGrid`、單一執行個體 mutex `Local\DeskGrid.SingleInstance`；舊安裝的資料夾需手動搬移。GitHub 舊網址會自動轉址。
+**Author**: 使用者決定

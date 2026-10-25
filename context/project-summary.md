@@ -1,7 +1,7 @@
 # Project Summary
 
 ## Project Name
-DeskFolders（repo 目錄名 DeskGrid）
+DeskGrid（repo 目錄名 DeskGrid）
 
 ## Project Goal
 在 Windows 10 22H2 / 11 桌面放置類似 iOS/Android 的資料夾 widget：2×2 縮圖預覽、點擊展開格子面板、每個 widget 對應一個實體資料夾並即時同步。MIT 開源。
@@ -17,18 +17,18 @@ C# + WPF、.NET 10 LTS、x64、CsWin32、xUnit v3、self-contained 單一 exe。
 
 ## Directory Structure
 ```
-DeskFolders.slnx          solution
+DeskGrid.slnx          solution
 Directory.Build.props     shared settings (nullable, x64, warnings as errors)
 global.json               SDK 10.0.x (rollForward latestFeature)
 .github/workflows/        ci.yml (build/test/publish), release.yml (v* tag → GitHub Release)
 README.md, README.zh-TW.md, LICENSE (MIT)
-src/DeskFolders/
-  DeskFolders.csproj
+src/DeskGrid/
+  DeskGrid.csproj
   app.manifest            PerMonitorV2, asInvoker
   NativeMethods.txt       CsWin32 API list
   App.xaml(.cs)           entry; ShutdownMode=OnExplicitShutdown
   Config/                 AppConfig, ConfigStore
-  Assets/                 DeskFolders.ico (tools/make-icon.ps1)
+  Assets/                 DeskGrid.ico (tools/make-icon.ps1)
   Desktop/                DesktopHost, DesktopSurface, IconLayer, MonitorArea, ShellMessageWindow, ScreenPoint/ScreenRect
   Diagnostics/            Log
   Folders/                FolderScanner, WidgetCatalog, RootFolder, FolderPaths, ItemImporter, WidgetFolderName, NaturalStringComparer, records
@@ -40,7 +40,7 @@ src/DeskFolders/
   Threading/              DispatcherThread (STA worker)
   Tray/                   TrayIcon, AutoStart
   Widgets/                FolderWidget (XAML), WidgetBoard, WidgetGrid
-tests/DeskFolders.Tests/  xUnit v3
+tests/DeskGrid.Tests/  xUnit v3
 tools/                    make-icon.ps1
 context/                  session context docs
 ```
@@ -55,7 +55,7 @@ DesktopHost（`Desktop/`）、ConfigStore（`Config/`）、FolderScanner + Widge
 階段 7：CI、打包、README、LICENSE（MVP 最後一個階段）。
 
 ## Current Status
-階段 1–6 使用者驗證通過。階段 7 完成於本機：單一 exe 打包並實際執行成功、CI 與 Release workflow、README（en / zh-TW）、MIT LICENSE；待推上公開 repo `Ryan970714/DeskFolders` 並確認 CI 通過。
+階段 1–6 使用者驗證通過。階段 7 完成於本機：單一 exe 打包並實際執行成功、CI 與 Release workflow、README（en / zh-TW）、MIT LICENSE；待推上公開 repo `Ryan970714/DeskGrid` 並確認 CI 通過。
 
 ## Known Issues
 - 舊版桌面階層（Win10 / Win11 ≤ 23H2）程式路徑尚未實機測試。

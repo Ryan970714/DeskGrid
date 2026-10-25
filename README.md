@@ -1,4 +1,4 @@
-# DeskFolders
+# DeskGrid
 
 [繁體中文](README.zh-TW.md)
 
@@ -21,8 +21,8 @@ Windows 10 22H2 or Windows 11, 64-bit. No .NET install needed: the download is a
 
 ## Install
 
-1. Download `DeskFolders-<version>-win-x64.exe` from [Releases](../../releases).
-2. Put it wherever you like (e.g. `%LOCALAPPDATA%\Programs\DeskFolders\`) and run it.
+1. Download `DeskGrid-<version>-win-x64.exe` from [Releases](../../releases).
+2. Put it wherever you like (e.g. `%LOCALAPPDATA%\Programs\DeskGrid\`) and run it.
 3. Optional: turn on **Start with Windows** in the tray menu.
 
 ### "Windows protected your PC"
@@ -34,14 +34,14 @@ If the file was blocked, right-click it → **Properties** → check **Unblock**
 Each release has a `.sha256` file next to the exe. To check that your download matches:
 
 ```powershell
-Get-FileHash .\DeskFolders-0.1.0-win-x64.exe -Algorithm SHA256
+Get-FileHash .\DeskGrid-0.1.0-win-x64.exe -Algorithm SHA256
 ```
 
 If you'd rather not trust a binary, [build it yourself](#build-from-source).
 
 ## Usage
 
-On first run DeskFolders creates `%USERPROFILE%\DeskFolders\`. **Every subfolder of it becomes a
+On first run DeskGrid creates `%USERPROFILE%\DeskGrid\`. **Every subfolder of it becomes a
 desktop folder**; the files inside are its items.
 
 | To | Do |
@@ -73,14 +73,14 @@ twice).
 
 | What | Where |
 |---|---|
-| Settings and folder positions | `%APPDATA%\DeskFolders\config.json` |
-| Log | `%LOCALAPPDATA%\DeskFolders\deskfolders.log` |
-| Your folders | `%USERPROFILE%\DeskFolders\` (or the root folder you chose) |
+| Settings and folder positions | `%APPDATA%\DeskGrid\config.json` |
+| Log | `%LOCALAPPDATA%\DeskGrid\deskgrid.log` |
+| Your folders | `%USERPROFILE%\DeskGrid\` (or the root folder you chose) |
 
 ### Uninstall
 
 Turn off **Start with Windows**, exit from the tray menu and delete the exe. To remove settings too,
-delete `%APPDATA%\DeskFolders` and `%LOCALAPPDATA%\DeskFolders`. Your folders and their contents are
+delete `%APPDATA%\DeskGrid` and `%LOCALAPPDATA%\DeskGrid`. Your folders and their contents are
 never touched.
 
 ## Known limitations
@@ -89,7 +89,7 @@ never touched.
 - Changing resolution, scaling or the taskbar while running doesn't re-snap folders until a restart.
 - Multiple monitors with different scaling aren't supported yet.
 - Apps dragged from the Start menu (no file behind them) can't be added.
-- When DeskFolders runs as administrator, Windows blocks drops from Explorer.
+- When DeskGrid runs as administrator, Windows blocks drops from Explorer.
 - The tray menu and Settings window stay light in dark mode.
 - Only tested on Windows 11; the Windows 10 desktop layout is handled but not yet verified.
 
@@ -98,9 +98,9 @@ never touched.
 Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 
 ```powershell
-dotnet build DeskFolders.slnx
-dotnet test DeskFolders.slnx
-dotnet publish src/DeskFolders/DeskFolders.csproj -p:PublishProfile=win-x64   # -> artifacts/publish/DeskFolders.exe
+dotnet build DeskGrid.slnx
+dotnet test DeskGrid.slnx
+dotnet publish src/DeskGrid/DeskGrid.csproj -p:PublishProfile=win-x64   # -> artifacts/publish/DeskGrid.exe
 ```
 
 Pushing a tag such as `v0.1.0` makes GitHub Actions publish a release.
@@ -110,7 +110,7 @@ Pushing a tag such as `v0.1.0` makes GitHub Actions publish a release.
 Each folder is a small per-pixel transparent WPF window parented to Explorer's `SHELLDLL_DefView`, the
 window that holds the desktop icons, placed above the icon list. That is what keeps it behind other
 windows yet clickable, and it works with both the classic desktop layout and the one in Windows 11
-24H2. When Explorer restarts and takes those windows with it, DeskFolders re-attaches them.
+24H2. When Explorer restarts and takes those windows with it, DeskGrid re-attaches them.
 `CLAUDE.md` and `context/` hold the design notes and decisions.
 
 ## License
