@@ -4,6 +4,8 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 
 # Session 啟動流程
 
+> 備註：`context/` 內的 `current-task.md`、`progress.md`、`todo.md`、`session-log.md` 是作者的本機工作筆記，未納入版控（見 `.gitignore`）；公開 repo 只有 `decisions.md` 與 `project-summary.md`。
+
 每次新的 Session，依序閱讀：
 
 1. `AGENTS.md`
@@ -155,6 +157,8 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 - 每完成一階段更新本檔「開發階段與進度」
 
 # Session 結束流程
+
+> 備註：第 1–3、6 項的檔案僅存在作者本機，不會出現在公開 repo。
 
 每次工作完成，依序執行：
 
