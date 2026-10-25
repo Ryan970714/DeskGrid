@@ -23,6 +23,9 @@ internal sealed class AppConfig
 
     public PanelBackground PanelBackground { get; set; } = new();
 
+    /// <summary>Top-left corner of the "new folder" tile in physical screen pixels; <see langword="null"/> until it is placed.</summary>
+    public ScreenPoint? AddTilePosition { get; set; }
+
     /// <summary>The release the user chose to keep the current version over ("Keep"); not asked about again unless a newer one appears.</summary>
     public string? SkippedUpdateVersion { get; set; }
 

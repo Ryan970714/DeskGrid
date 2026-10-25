@@ -113,6 +113,9 @@ Using the default root folder instead:
   <data name="RootFolderNotAbsolute" xml:space="preserve">
     <value>it is not a full path.</value>
   </data>
+  <data name="WidgetAddTile" xml:space="preserve">
+    <value>New folder</value>
+  </data>
   <data name="WidgetPinToTaskbar" xml:space="preserve">
     <value>Pin to taskbar…</value>
   </data>

@@ -130,6 +130,7 @@ public partial class App : Application
         var board = new WidgetBoard(_desktopHost!, _configStore!, _icons!);
         board.WidgetClicked += (_, click) => _panels!.Toggle(click.Folder, click.Bounds);
         board.DragHovered += (_, hover) => _panels!.OpenForDrag(hover.Folder, hover.Bounds);
+        board.AddRequested += (_, _) => CreateFolder();
         board.PinRequested += (_, folder) => _ = PinToTaskbarAsync(folder);
 
         var catalog = new WidgetCatalog(_configStore!);

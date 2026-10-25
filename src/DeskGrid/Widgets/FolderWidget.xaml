@@ -6,7 +6,17 @@
   <Border x:Name="Highlight" CornerRadius="4" Padding="2,4">
     <StackPanel>
       <Border Width="48" Height="48" CornerRadius="10.7" Padding="5.8" Background="#4DFFFFFF">
-        <Image x:Name="Preview" RenderOptions.BitmapScalingMode="HighQuality" />
+        <Grid>
+          <Image x:Name="Preview" RenderOptions.BitmapScalingMode="HighQuality" />
+          <TextBlock x:Name="Plus"
+                     Visibility="Collapsed"
+                     Text="+"
+                     Foreground="White"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     FontFamily="Segoe UI Light"
+                     FontSize="34" />
+        </Grid>
       </Border>
       <TextBlock x:Name="Label"
                  Margin="0,4,0,0"

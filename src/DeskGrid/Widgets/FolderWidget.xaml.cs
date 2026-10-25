@@ -58,6 +58,15 @@ internal partial class FolderWidget : UserControl
     /// <summary>Sets the cell the widget fills (DIP); the content stays centered in it.</summary>
     public void SetCellSize(double width, double height) => (Width, Height) = (width, height);
 
+    /// <summary>Turns the widget into the "new folder" tile: a plus sign instead of a preview, no folder menu.</summary>
+    public void ShowAddTile(string label)
+    {
+        Label.Text = label;
+        Preview.Visibility = Visibility.Collapsed;
+        Plus.Visibility = Visibility.Visible;
+        ContextMenu = null;
+    }
+
     public void Show(string name, Task<BitmapSource> preview)
     {
         Label.Text = name;
