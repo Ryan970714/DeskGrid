@@ -1,4 +1,4 @@
-# Decisions
+﻿# Decisions
 
 > 只能新增，不得覆蓋或刪除既有紀錄。若某個決策後來被推翻，新增一筆新紀錄說明並引用原紀錄的日期，不要修改原紀錄。
 
@@ -95,10 +95,10 @@
 ---
 
 ### 2026-10-24 — 測試框架 xUnit v3
-**Decision**: `tests/DeskFolders.Tests`，xUnit v3 3.2.2 + VSTest runner；`Log.FilePath` 可由測試改寫，避免寫進真實 log。
+**Decision**: `tests/DeskGrid.Tests`，xUnit v3 3.2.2 + VSTest runner；`Log.FilePath` 可由測試改寫，避免寫進真實 log。
 **Reason**: 開源專案常見；Config/Folders 是純邏輯，適合自動測試。
 **Alternatives**: MSTest、NUnit；只做手動測試。
-**Consequences**: `InternalsVisibleTo("DeskFolders.Tests")`；共用設定移到 `Directory.Build.props`。
+**Consequences**: `InternalsVisibleTo("DeskGrid.Tests")`；共用設定移到 `Directory.Build.props`。
 **Author**: Claude
 
 ---
@@ -149,7 +149,7 @@
 ---
 
 ### 2026-10-24 — 暫時性結束入口
-**Decision**: 階段 4–5 期間，widget 右鍵選單提供「結束 DeskFolders」。
+**Decision**: 階段 4–5 期間，widget 右鍵選單提供「結束 DeskGrid」。
 **Reason**: 移除 spike 後在系統匣（階段 6）之前沒有結束方式；右鍵 → 選單比直接右鍵結束不易誤觸。
 **Alternatives**: 只能用工作管理員結束；提前做系統匣。
 **Consequences**: 階段 6 要移除，字串 `MenuExit` 會沿用到系統匣選單。
@@ -224,7 +224,7 @@
 **Decision**: `ShellImage`（原 Icons/）、`ShellItem`（原 Panel/）與新的 `ShortcutFile` 移到 `Shell/`。
 **Reason**: 都是 Shell COM / ShellExecute 互通，且被多個模組使用（Icons、Panel、Folders、App）。
 **Alternatives**: 留在各自使用的模組。
-**Consequences**: namespace `DeskFolders.Shell`。
+**Consequences**: namespace `DeskGrid.Shell`。
 **Author**: Claude
 
 ---
@@ -239,7 +239,7 @@
 ---
 
 ### 2026-10-25 — 發布：公開 repo、tag 自動 Release、MIT（Ryan Kuo）、雙語 README
-**Decision**: 公開 repo `Ryan970714/DeskFolders`；push/PR 跑 CI（build、test、publish artifact）；推 `v*` tag 自動建 Release（附單一 exe 與 SHA256）；LICENSE 著作權人 Ryan Kuo；README 英文 + 繁中。
+**Decision**: 公開 repo `Ryan970714/DeskGrid`；push/PR 跑 CI（build、test、publish artifact）；推 `v*` tag 自動建 Release（附單一 exe 與 SHA256）；LICENSE 著作權人 Ryan Kuo；README 英文 + 繁中。
 **Reason**: 使用者選定。
 **Alternatives**: 私人 repo；只要 CI；只有英文 README。
 **Consequences**: CLAUDE.md、context/ 也會公開（已掃描無個人資訊）；推送 workflow 檔需要 gh `workflow` 權限。
@@ -258,9 +258,9 @@
 
 ---
 
-### 2026-10-25 — 專案更名 DeskFolders → DeskGrid
+### 2026-10-25 — 專案更名 DeskGrid → DeskGrid
 **Decision**: 專案、GitHub repo、solution/csproj/namespace、exe、app 資料路徑全部改為 `DeskGrid`（大小寫一致；log 檔 `deskgrid.log`）。
 **Reason**: 使用者要求更名。
-**Alternatives**: 只改 repo 與顯示名稱、保留內部 `DeskFolders` 識別碼（會造成名稱不一致）。
-**Consequences**: 本檔與 `session-log.md` 之前的紀錄依「只能新增」規則保留舊名 `DeskFolders`，不回改。Config 改存 `%APPDATA%\DeskGrid\`、log 在 `%LOCALAPPDATA%\DeskGrid\`、預設根目錄 `%USERPROFILE%\DeskGrid\`、開機自啟登錄值名 `DeskGrid`、單一執行個體 mutex `Local\DeskGrid.SingleInstance`；舊安裝的資料夾需手動搬移。GitHub 舊網址會自動轉址。
+**Alternatives**: 只改 repo 與顯示名稱、保留內部 `DeskGrid` 識別碼（會造成名稱不一致）。
+**Consequences**: 本檔與 `session-log.md` 之前的紀錄依「只能新增」規則保留舊名 `DeskGrid`，不回改。Config 改存 `%APPDATA%\DeskGrid\`、log 在 `%LOCALAPPDATA%\DeskGrid\`、預設根目錄 `%USERPROFILE%\DeskGrid\`、開機自啟登錄值名 `DeskGrid`、單一執行個體 mutex `Local\DeskGrid.SingleInstance`；舊安裝的資料夾需手動搬移。GitHub 舊網址會自動轉址。
 **Author**: 使用者決定

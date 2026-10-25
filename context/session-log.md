@@ -1,16 +1,16 @@
-# Session Log
+﻿# Session Log
 
 > 每次 Session 結束新增一筆，最新放最上方，每筆不超過 10 行。
 
 ---
 
 **2026-10-25（更名 DeskGrid）**
-**Goal**: 專案與 repo 全面改名 DeskFolders → DeskGrid。
+**Goal**: 專案與 repo 全面改名 DeskGrid → DeskGrid。
 **Completed**: 內容、資料夾、solution/csproj/ico 全改名；GitHub repo 改名並更新 remote；build 0 警告、72 測試通過。
 **Modified**: 全專案、context 文件。
 **Decisions**: 見 decisions.md「專案更名」。
-**Next Session**: 使用者驗證；舊資料夾 `%USERPROFILE%\DeskFolders`、`%APPDATA%\DeskFolders` 需手動搬到 DeskGrid。
-**Issues**: v0.1.0 Release 的 exe 仍叫 DeskFolders，下次發版才是 DeskGrid。
+**Next Session**: 使用者驗證；舊資料夾 `%USERPROFILE%\DeskGrid`、`%APPDATA%\DeskGrid` 需手動搬到 DeskGrid。
+**Issues**: v0.1.0 Release 的 exe 仍叫 DeskGrid，下次發版才是 DeskGrid。
 
 ---
 
@@ -27,7 +27,7 @@
 **2026-10-25（階段 7）**
 **Goal**: CI、self-contained 打包、README、LICENSE。
 **Completed**: publish profile（62 MB 單一 exe，實測可執行）、ci.yml、release.yml、README en/zh-TW、MIT LICENSE、csproj 版本資訊；公開前掃描個人資訊。
-**Modified**: DeskFolders.csproj、.gitignore（artifacts/、pubxml 例外）。
+**Modified**: DeskGrid.csproj、.gitignore（artifacts/、pubxml 例外）。
 **Decisions**: 公開 repo、tag Release、Ryan Kuo、雙語 README（使用者）；打包設定（見 decisions.md）。
 **Next Session**: 使用者驗證；是否推 v0.1.0 tag 發布 Release。
 **Issues**: 使用者授權 workflow 權限後已建公開 repo 並推送，首次 CI 通過（72 測試）。
@@ -70,7 +70,7 @@
 **Modified**: App.xaml.cs、SpikeTile、NativeMethods.txt、測試改用共用 DispatcherThread。
 **Decisions**: 一律圖示（使用者）；Bgra32；STA 執行緒 + mtime 快取（見 decisions.md）。
 **Next Session**: 使用者驗證後開始階段 4，先確認 widget 外觀與預設位置。
-**Issues**: 捷徑目標圖示更新需重啟；`%USERPROFILE%\DeskFolders` 留有 4 個示範資料夾。
+**Issues**: 捷徑目標圖示更新需重啟；`%USERPROFILE%\DeskGrid` 留有 4 個示範資料夾。
 
 ---
 
