@@ -1,7 +1,7 @@
 # Todo
 
 ## High Priority
-- 推上公開 repo、確認 CI 通過；決定是否發布 v0.1.0
+- 決定是否發布 v0.1.0（推 tag 後確認 Release workflow 與附檔）
 - 在 Win10 22H2（或 Win11 23H2）驗證舊版桌面階層與面板非 Acrylic 路徑（可用 VirtualBox VM）
 
 ## Medium Priority

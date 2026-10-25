@@ -9,8 +9,8 @@
 **Completed**: publish profile（62 MB 單一 exe，實測可執行）、ci.yml、release.yml、README en/zh-TW、MIT LICENSE、csproj 版本資訊；公開前掃描個人資訊。
 **Modified**: DeskFolders.csproj、.gitignore（artifacts/、pubxml 例外）。
 **Decisions**: 公開 repo、tag Release、Ryan Kuo、雙語 README（使用者）；打包設定（見 decisions.md）。
-**Next Session**: 授權 workflow 權限 → 建 repo 推送 → 確認 CI → 是否發布 v0.1.0。
-**Issues**: gh token 缺 workflow 權限。
+**Next Session**: 使用者驗證；是否推 v0.1.0 tag 發布 Release。
+**Issues**: 使用者授權 workflow 權限後已建公開 repo 並推送，首次 CI 通過（72 測試）。
 
 ---
 

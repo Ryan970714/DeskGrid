@@ -4,26 +4,23 @@
 階段 7：GitHub Actions CI、self-contained 打包、README（含 SmartScreen 說明）、LICENSE (MIT)。
 
 ## Current Task
-本機完成並已 commit；等使用者授權 gh `workflow` 權限後建立公開 repo 並推送，確認 CI 通過。
+等待使用者驗證階段 7，並決定是否推 `v0.1.0` tag 發布第一個 Release。
 
 ## Current Status
-- 使用者決定：公開 repo `Ryan970714/DeskFolders`；CI + 推 tag 自動 Release；LICENSE 著作權人 Ryan Kuo；README 英文 + 繁中
-- `dotnet publish -p:PublishProfile=win-x64` → 62 MB 單一 exe，實際執行成功（版本 0.1.0、版權資訊正確）
-- workflows：ci.yml（push main / PR）、release.yml（v* tag，附 exe 與 .sha256）；action 版本 checkout@v7、setup-dotnet@v6、upload-artifact@v7
-- 公開前掃描：無個人路徑 / Email / token；commit 作者為 GitHub noreply 信箱
-- gh 已登入 Ryan970714，但 token 只有 gist / read:org / repo，推送 workflow 檔需要 `workflow` 權限
+- 公開 repo：https://github.com/Ryan970714/DeskFolders（`main` 追蹤 `origin/main`）
+- 第一次 CI（run 40159147648）通過：build、72 個測試、publish，artifact `DeskFolders-win-x64` 56 MB（zip）
+- 本機 `dotnet publish -p:PublishProfile=win-x64` → 62 MB 單一 exe，實際執行成功
+- gh token 已有 `workflow` 權限（使用者 2026-10-25 授權）
+- Release workflow 尚未實際跑過（還沒推任何 tag）
 
 ## Current File
-`.github/workflows/*`、`README*.md`、`LICENSE`、`src/DeskFolders/Properties/PublishProfiles/win-x64.pubxml`
+`.github/workflows/*`、`README*.md`、`LICENSE`
 
 ## Next Step
-1. 使用者執行 `gh auth refresh -h github.com -s workflow`
-2. `gh repo create Ryan970714/DeskFolders --public --source . --remote origin --push`
-3. 確認 CI 通過
-4. 是否推 `v0.1.0` tag 發布第一個 Release（使用者決定）
+使用者決定後：`git tag v0.1.0` + `git push origin v0.1.0` → 確認 Release 有 exe 與 .sha256。之後為 MVP 後的改進（見 `todo.md`）。
 
 ## Blocking Issues
-gh token 缺 `workflow` 權限（需使用者在瀏覽器授權）。
+無。
 
 ## Last Update
 2026-10-25

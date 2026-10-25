@@ -7,7 +7,7 @@
   - `DesktopSurface`：layered 子視窗 HwndSource，可重建並沿用 WPF content
   - `DesktopHost`：Lost 事件 + 每秒重試 + `TaskbarCreated` 監聽，自動重掛
   - 專案 context 文件（CLAUDE.md、AGENTS.md、context/）
-- 階段 7：CI、打包、README、LICENSE（本機完成，待推上 GitHub）
+- 階段 7：CI、打包、README、LICENSE（已推上公開 repo，CI 通過，待驗證）
   - `win-x64.pubxml`：self-contained 單一 exe（62 MB）
   - `ci.yml`（build / test / publish artifact）、`release.yml`（v* tag → Release + sha256）
   - `README.md` + `README.zh-TW.md`（含 SmartScreen 與 SHA256 說明）、MIT `LICENSE`
@@ -47,13 +47,13 @@
   - `SpikeTile` 顯示掃描結果供手動驗證
 
 ## In Progress
-- 階段 7：推上 GitHub、確認 CI、使用者驗證
+- 階段 7 使用者驗證；是否發布 v0.1.0
 
 ## Pending
 - MVP 後的改進（見 `todo.md`）
 
 ## Completion %
-約 95%（7 / 7 階段實作完成，待推送與驗證）
+約 98%（7 / 7 階段完成，已推上 GitHub，待驗證與首次 Release）
 
 ## Milestones
 - 2026-10-24：階段 1 完成並驗證通過
@@ -62,7 +62,7 @@
 - 2026-10-24：階段 4 完成並驗證通過
 - 2026-10-25：階段 5 完成並驗證通過
 - 2026-10-25：階段 6 完成並驗證通過
-- 2026-10-25：階段 7 本機完成
+- 2026-10-25：階段 7 完成，推上 https://github.com/Ryan970714/DeskFolders，CI 通過
 
 ## Last Update
 2026-10-24
