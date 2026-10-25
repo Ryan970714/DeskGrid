@@ -47,13 +47,13 @@
   - `SpikeTile` 顯示掃描結果供手動驗證
 
 ## In Progress
-- 階段 7 使用者驗證；是否發布 v0.1.0
+- 階段 7 與 v0.1.0 使用者驗證
 
 ## Pending
 - MVP 後的改進（見 `todo.md`）
 
 ## Completion %
-約 98%（7 / 7 階段完成，已推上 GitHub，待驗證與首次 Release）
+100%（MVP 7 / 7 階段完成，v0.1.0 已發布）
 
 ## Milestones
 - 2026-10-24：階段 1 完成並驗證通過
@@ -63,6 +63,7 @@
 - 2026-10-25：階段 5 完成並驗證通過
 - 2026-10-25：階段 6 完成並驗證通過
 - 2026-10-25：階段 7 完成，推上 https://github.com/Ryan970714/DeskFolders，CI 通過
+- 2026-10-25：發布 v0.1.0（Release workflow 通過，SHA256 核對一致）
 
 ## Last Update
 2026-10-24

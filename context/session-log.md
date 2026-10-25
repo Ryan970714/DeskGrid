@@ -4,6 +4,16 @@
 
 ---
 
+**2026-10-25（v0.1.0）**
+**Goal**: 發布第一個公開 Release。
+**Completed**: 推 `v0.1.0` tag，Release workflow 通過；Release 附 62 MB exe 與 .sha256，下載核對一致，檔案版本 0.1.0。
+**Modified**: context 文件。
+**Decisions**: 無新決策。
+**Next Session**: 使用者驗證後挑 MVP 後改進。
+**Issues**: 無。
+
+---
+
 **2026-10-25（階段 7）**
 **Goal**: CI、self-contained 打包、README、LICENSE。
 **Completed**: publish profile（62 MB 單一 exe，實測可執行）、ci.yml、release.yml、README en/zh-TW、MIT LICENSE、csproj 版本資訊；公開前掃描個人資訊。
