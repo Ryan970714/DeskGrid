@@ -125,6 +125,7 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 - **開機自啟**（`AutoStart`）：`HKCU\...\Run\DeskGrid = "exe 路徑"`；工作管理員「啟動應用程式」停用時會在 `StartupApproved\Run` 留旗標（第一個 byte 為奇數）→ 視為關閉；我們切換時會清掉該旗標。啟動時若 exe 被搬走就更新路徑。
 - **單一執行個體**：`Local\DeskGrid.SingleInstance` mutex，第二個直接結束。
 - **設定視窗**：根目錄（`OpenFolderDialog`）、欄數 1–8、桌面捷徑拖入模式、面板背景（自訂色用 comdlg32 `ChooseColor`）。非模態、確定 / 取消；**非模態視窗的 `IsCancel` 不會自動關窗**，要自己 `Close()`。根目錄變更 → 重建 catalog 與 widget；其他設定 → 存檔、關閉已開面板。
+- **Fluent 視窗**（設定、新增資料夾）：`ThemeMode="System"`；卡片樣式 `Card` / `CardTitle` 在 `App.xaml`；`FluentWindow.UseOpaqueBackground` 關掉 Mica 改不透明底色，文字才能用 ClearType。
 - **XAML 不可引用本組件型別**（例如 `x:Static` 到 `Strings`）：`Strings` 在 build 時才產生在 `obj/`，WPF 的暫時標記組件編譯不到。介面文字在 code-behind 設定。
 - **App 圖示**：`tools/make-icon.ps1` 產生 `src/DeskGrid/Assets/DeskGrid.ico`（多尺寸 PNG ICO）。
 

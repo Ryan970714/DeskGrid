@@ -1,5 +1,4 @@
 using System.Windows;
-using System.Windows.Interop;
 using System.Windows.Media;
 using DeskGrid.Config;
 using DeskGrid.Folders;
@@ -7,7 +6,6 @@ using DeskGrid.Panel;
 using DeskGrid.Resources;
 using DeskGrid.Updates;
 using Microsoft.Win32;
-using Windows.Win32.Foundation;
 
 namespace DeskGrid.Settings;
 
@@ -25,7 +23,7 @@ internal partial class SettingsWindow : Window
     {
         InitializeComponent();
         LocalizeTexts();
-        SourceInitialized += (_, _) => UseOpaqueBackground();
+        FluentWindow.UseOpaqueBackground(this);
 
         RootBox.Text = config.RootPath;
         ColumnsBox.ItemsSource = Enumerable.Range(1, MaxColumns).ToList();
@@ -37,17 +35,6 @@ internal partial class SettingsWindow : Window
         _customColor = PanelTheme.ParseColor(background.CustomColor) ?? PanelTheme.ParseColor(new PanelBackground().CustomColor)!.Value;
         ColorSwatch.Background = new SolidColorBrush(_customColor);
         OpacitySlider.Value = Math.Clamp(background.CustomOpacity, OpacitySlider.Minimum, OpacitySlider.Maximum);
-    }
-
-    /// <summary>
-    /// The Fluent theme gives the window a Mica backdrop, which makes WPF composite its text with alpha
-    /// (grayscale antialiasing, visibly softer than ClearType). A plain opaque window keeps the text sharp.
-    /// </summary>
-    private void UseOpaqueBackground()
-    {
-        var dark = PanelTheme.SystemUsesDarkTheme;
-        Backdrop.DisableBackdrop(new HWND(new WindowInteropHelper(this).Handle));
-        Background = new SolidColorBrush(dark ? Color.FromRgb(0x20, 0x20, 0x20) : Color.FromRgb(0xF3, 0xF3, 0xF3));
     }
 
     public event EventHandler<SettingsChoice>? Applied;

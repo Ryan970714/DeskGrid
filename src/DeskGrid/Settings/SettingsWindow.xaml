@@ -9,22 +9,6 @@
         Width="580"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen">
-  <Window.Resources>
-    <!-- Translucent greys read as a card on both the light and the dark Fluent window background. -->
-    <Style x:Key="Card" TargetType="Border">
-      <Setter Property="Background" Value="#14808080" />
-      <Setter Property="BorderBrush" Value="#26808080" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="8" />
-      <Setter Property="Padding" Value="16,14" />
-      <Setter Property="Margin" Value="0,0,0,8" />
-    </Style>
-    <Style x:Key="CardTitle" TargetType="TextBlock">
-      <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Margin" Value="0,0,0,10" />
-    </Style>
-  </Window.Resources>
-
   <StackPanel Margin="20,16,20,20">
     <Border Style="{StaticResource Card}">
       <StackPanel>

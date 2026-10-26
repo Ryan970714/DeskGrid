@@ -12,6 +12,7 @@ internal partial class NewFolderDialog : Window
     public NewFolderDialog(string rootPath)
     {
         InitializeComponent();
+        FluentWindow.UseOpaqueBackground(this);
         Title = Strings.NewFolderTitle;
         Prompt.Text = Strings.NewFolderPrompt;
         OkButton.Content = Strings.ButtonOk;
