@@ -27,7 +27,7 @@ internal static class UpdateInstaller
     /// Returns its path, or why that was not possible.
     /// </summary>
     public static async Task<(string? Path, string? Error)> DownloadAsync(
-        ReleaseInfo release, IProgress<double> progress, CancellationToken cancellation = default)
+        ReleaseInfo release, IProgress<UpdateProgress> progress, CancellationToken cancellation = default)
     {
         if (release.ExeUrl is null || release.Sha256 is null)
         {
@@ -57,13 +57,11 @@ internal static class UpdateInstaller
                 {
                     await target.WriteAsync(buffer.AsMemory(0, read), cancellation);
                     done += read;
-                    if (total > 0)
-                    {
-                        progress.Report((double)done / total);
-                    }
+                    progress.Report(new UpdateProgress(UpdateStage.Downloading, done, total));
                 }
             }
 
+            progress.Report(new UpdateProgress(UpdateStage.Verifying));
             await using (var downloaded = File.OpenRead(file))
             {
                 var actual = Convert.ToHexStringLower(await SHA256.HashDataAsync(downloaded, cancellation));

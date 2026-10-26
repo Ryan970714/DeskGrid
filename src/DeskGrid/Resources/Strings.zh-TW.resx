@@ -159,6 +159,15 @@
   <data name="UpdateDownloading" xml:space="preserve">
     <value>下載中…</value>
   </data>
+  <data name="UpdateDownloadingProgress" xml:space="preserve">
+    <value>下載中… {0:P0}（{1:F1} / {2:F1} MB）</value>
+  </data>
+  <data name="UpdateVerifying" xml:space="preserve">
+    <value>正在驗證下載的檔案…</value>
+  </data>
+  <data name="UpdateInstalling" xml:space="preserve">
+    <value>正在安裝新版本並重新啟動 DeskGrid…</value>
+  </data>
   <data name="UpdateFailed" xml:space="preserve">
     <value>更新失敗：{0}</value>
   </data>

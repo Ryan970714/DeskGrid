@@ -317,7 +317,7 @@ public partial class App : Application
 
     private string OfferUpdate(ReleaseInfo latest, Window? owner)
     {
-        string? downloaded = null;
+        var replacing = false;
         var dialog = new UpdateDialog(latest, async progress =>
         {
             if (!UpdateInstaller.CanReplaceSelf)
@@ -327,8 +327,15 @@ public partial class App : Application
             }
 
             var (path, error) = await UpdateInstaller.DownloadAsync(latest, progress);
-            downloaded = path;
-            return error;
+            if (path is null)
+            {
+                return error;
+            }
+
+            progress.Report(new UpdateProgress(UpdateStage.Installing));
+            var problem = UpdateInstaller.StartReplacement(path);
+            replacing = problem is null;
+            return problem;
         });
         if (owner is { IsVisible: true })
         {
@@ -343,17 +350,9 @@ public partial class App : Application
                 _configStore.Save();
                 break;
 
-            case UpdateChoice.Update when downloaded is not null:
-                if (UpdateInstaller.StartReplacement(downloaded) is { } problem)
-                {
-                    MessageBox.Show(string.Format(Strings.UpdateFailed, problem), Strings.AppName, MessageBoxButton.OK, MessageBoxImage.Error);
-                    ShellItem.Open(latest.PageUrl);
-                }
-                else
-                {
-                    Shutdown();
-                }
-
+            case UpdateChoice.Update when replacing:
+                // The helper script waits for this process to exit, swaps the exe and starts it again.
+                Shutdown();
                 break;
 
             case UpdateChoice.Update:
