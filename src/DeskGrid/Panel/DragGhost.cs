@@ -19,6 +19,8 @@ internal sealed class DragGhost : Window
 {
     private const double WindowSize = 96;
     private const double IconSize = 48;
+    private const double TileCornerRadius = 10.7; // as the tile in PopupPanel.xaml
+    private const double TilePadding = 5.8;
     private const double LiftedScale = 1.2;
     private static readonly TimeSpan LiftTime = TimeSpan.FromMilliseconds(140);
     private static readonly TimeSpan LandTime = TimeSpan.FromMilliseconds(180);
@@ -29,7 +31,8 @@ internal sealed class DragGhost : Window
     private DispatcherTimer? _animation;
 
     /// <param name="center">Where the icon's center first appears, in physical screen pixels.</param>
-    public DragGhost(ImageSource? icon, ScreenPoint center)
+    /// <param name="tile">The plate under the icon of a folder, or <see langword="null"/> for a file.</param>
+    public DragGhost(ImageSource? icon, ScreenPoint center, Brush? tile = null)
     {
         _center = center;
         WindowStyle = WindowStyle.None;
@@ -43,11 +46,16 @@ internal sealed class DragGhost : Window
         Width = WindowSize;
         Height = WindowSize;
 
-        _content.Children.Add(new Image
+        var image = new Image { Source = icon };
+        _content.Children.Add(new Border
         {
-            Source = icon,
             Width = IconSize,
             Height = IconSize,
+            // A folder's preview sits on its tile, as in the panel's list.
+            Background = tile,
+            CornerRadius = new CornerRadius(TileCornerRadius),
+            Padding = tile is null ? new Thickness(0) : new Thickness(TilePadding),
+            Child = image,
             RenderTransformOrigin = new Point(0.5, 0.5),
             RenderTransform = _scale,
             Effect = new DropShadowEffect { BlurRadius = 14, ShadowDepth = 3, Opacity = 0.45 },

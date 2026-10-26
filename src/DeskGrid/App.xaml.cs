@@ -66,7 +66,17 @@ public partial class App : Application
         _desktopHost.Start();
         _icons = new IconService();
         _panels = new PanelController(_configStore, _icons);
-        _panels.ItemReordered += (_, e) => _catalog?.MoveItem(e.FolderName, e.ItemName, e.Index);
+        _panels.ItemReordered += (_, e) =>
+        {
+            if (e.FolderName == ItemReorderedEventArgs.FolderList)
+            {
+                _catalog?.MoveFolder(e.ItemName, e.Index);
+            }
+            else
+            {
+                _catalog?.MoveItem(e.FolderName, e.ItemName, e.Index);
+            }
+        };
         _panels.ItemsDropped += (_, e) => AddDroppedItems(e);
         _panels.FolderRenamer = RenameFolder;
         _tray = new TrayIcon(Strings.AppName, TrayMenu);

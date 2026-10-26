@@ -71,6 +71,16 @@ internal sealed class WidgetCatalog : IDisposable
         return changed;
     }
 
+    /// <summary>Puts folder <paramref name="name"/> at <paramref name="index"/> of the saved folder order and rescans.</summary>
+    public void MoveFolder(string name, int index)
+    {
+        if (MoveInOrder(_store.Config.FolderOrder, name, index))
+        {
+            _store.Save();
+            Refresh();
+        }
+    }
+
     /// <summary>Puts <paramref name="itemName"/> at <paramref name="index"/> of the widget's saved order and rescans.</summary>
     public void MoveItem(string widgetName, string itemName, int index)
     {
@@ -113,13 +123,26 @@ internal sealed class WidgetCatalog : IDisposable
         return true;
     }
 
-    // Keeps saved names that still exist (once each), then appends new ones in scan order.
-    private static bool SyncItemOrder(List<string> order, IReadOnlyList<FolderItem> items)
+    /// <summary>Sorts <paramref name="widgets"/> by the saved folder order (new folders last) and updates <paramref name="order"/> to match.</summary>
+    /// <returns><see langword="true"/> if <paramref name="order"/> changed.</returns>
+    internal static bool OrderFolders(List<string> order, ref List<WidgetFolder> widgets)
     {
-        var present = items.Select(i => i.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var changed = SyncOrder(order, widgets.Select(w => w.Name).ToList());
+        var rank = order.Select((name, index) => (name, index)).ToDictionary(e => e.name, e => e.index, StringComparer.OrdinalIgnoreCase);
+        widgets = [.. widgets.OrderBy(w => rank[w.Name])];
+        return changed;
+    }
+
+    private static bool SyncItemOrder(List<string> order, IReadOnlyList<FolderItem> items) =>
+        SyncOrder(order, items.Select(i => i.Name).ToList());
+
+    // Keeps saved names that still exist (once each), then appends new ones in scan order.
+    private static bool SyncOrder(List<string> order, List<string> names)
+    {
+        var present = names.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var synced = order.Where(present.Contains).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         var known = synced.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        synced.AddRange(items.Select(i => i.Name).Where(known.Add));
+        synced.AddRange(names.Where(known.Add));
 
         if (synced.SequenceEqual(order))
         {
@@ -139,7 +162,9 @@ internal sealed class WidgetCatalog : IDisposable
             return;
         }
 
-        if (Reconcile(_store.Config.Widgets, scanned, out var ordered))
+        var changed = Reconcile(_store.Config.Widgets, scanned, out var ordered);
+        changed |= OrderFolders(_store.Config.FolderOrder, ref ordered);
+        if (changed)
         {
             _store.Save();
         }
@@ -158,6 +183,12 @@ internal sealed class WidgetCatalog : IDisposable
         }
 
         widgets[e.NewName] = widgetConfig;
+        var order = _store.Config.FolderOrder;
+        if (order.FindIndex(n => string.Equals(n, e.OldName, StringComparison.OrdinalIgnoreCase)) is >= 0 and var at)
+        {
+            order[at] = e.NewName;
+        }
+
         _store.Save();
         Log.Info($"Widget folder renamed \"{e.OldName}\" -> \"{e.NewName}\"; settings moved.");
     }

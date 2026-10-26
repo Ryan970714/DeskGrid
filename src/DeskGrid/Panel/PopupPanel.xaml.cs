@@ -149,7 +149,7 @@ internal partial class PopupPanel : Window
     {
         _list = folders;
         Folder = null;
-        Heading.Text = Strings.PanelAllFolders;
+        Heading.Text = Strings.AppName;
         ShowItems(folders.Select(f => new PanelItem(f)), Strings.PanelNoFolders);
     }
 
@@ -210,9 +210,9 @@ internal partial class PopupPanel : Window
 
     protected override void OnDragOver(DragEventArgs e)
     {
-        if (_hiddenForDrag || Folder is null)
+        if (_hiddenForDrag)
         {
-            // Gone from the screen (it may still be hit), or showing the list of folders: nothing to drop on.
+            // Gone from the screen (it may still be hit): nothing to drop on.
             e.Effects = DragDropEffects.None;
         }
         else if (IsOwnItem(e))
@@ -225,6 +225,11 @@ internal partial class PopupPanel : Window
             }
 
             e.Effects = DragDropEffects.Move;
+        }
+        else if (Folder is null)
+        {
+            // The list of folders only takes its own folders being rearranged.
+            e.Effects = DragDropEffects.None;
         }
         else if (e.Data.GetDataPresent(DataFormats.FileDrop))
         {
@@ -273,7 +278,7 @@ internal partial class PopupPanel : Window
 
     protected override void OnDrop(DragEventArgs e)
     {
-        if (_hiddenForDrag || Folder is not { } folder)
+        if (_hiddenForDrag)
         {
             e.Effects = DragDropEffects.None;
         }
@@ -283,10 +288,14 @@ internal partial class PopupPanel : Window
             if (_slot >= 0)
             {
                 _landing = SlotCenter(_slot);
-                _pendingReorder = new ItemReorderedEventArgs(folder.Name, name, _slot);
+                _pendingReorder = new ItemReorderedEventArgs(Folder?.Name ?? ItemReorderedEventArgs.FolderList, name, _slot);
             }
 
             e.Effects = DragDropEffects.Move;
+        }
+        else if (Folder is not { } folder)
+        {
+            e.Effects = DragDropEffects.None;
         }
         else if (e.Data.GetData(DataFormats.FileDrop) is string[] { Length: > 0 } paths)
         {
@@ -316,8 +325,8 @@ internal partial class PopupPanel : Window
     }
 
     private bool IsOwnItem(DragEventArgs e) =>
-        _dragIndex >= 0 && Folder is { } shown && e.Data.GetDataPresent(ItemFormat)
-        && e.Data.GetData(FolderFormat) is string folder && string.Equals(folder, shown.Name, StringComparison.OrdinalIgnoreCase);
+        _dragIndex >= 0 && e.Data.GetDataPresent(ItemFormat) && e.Data.GetData(FolderFormat) is string folder
+        && string.Equals(folder, Folder?.Name ?? ItemReorderedEventArgs.FolderList, StringComparison.OrdinalIgnoreCase);
 
     // Compared in physical pixels, as the window manager does: in DIPs, a cursor that has just left through the
     // right or bottom edge can round back inside, and the panel would miss that the item was taken out.
@@ -345,7 +354,7 @@ internal partial class PopupPanel : Window
 
         // Measuring has made the item containers. The icon of a dropped item is still on its way to its slot.
         if (_settlingItem is { } name
-            && ContainerAt(_items.FindIndex(i => string.Equals(i.Item?.Name, name, StringComparison.OrdinalIgnoreCase))) is { } landing)
+            && ContainerAt(_items.FindIndex(i => string.Equals(i.Item?.Name ?? i.Folder?.Name, name, StringComparison.OrdinalIgnoreCase))) is { } landing)
         {
             landing.Opacity = 0;
         }
@@ -606,8 +615,7 @@ internal partial class PopupPanel : Window
 
     private void OnItemMove(object sender, MouseEventArgs e)
     {
-        // Folders in the list of all folders stay where they are.
-        if (e.LeftButton != MouseButtonState.Pressed || _pressed is not { IsFolder: false } item)
+        if (e.LeftButton != MouseButtonState.Pressed || _pressed is not { } item)
         {
             return;
         }
@@ -625,7 +633,15 @@ internal partial class PopupPanel : Window
     private void DragItem(PanelItem item, FrameworkElement source)
     {
         var index = _items.IndexOf(item);
-        if (index < 0 || item.Item is not { } file || Folder is not { } folder)
+        if (index < 0)
+        {
+            return;
+        }
+
+        // A file of the open folder, or (in the list of all folders) a folder, which can only be rearranged.
+        var name = item.Item?.Name ?? item.Folder?.Name;
+        var owner = Folder?.Name ?? ItemReorderedEventArgs.FolderList;
+        if (name is null)
         {
             return;
         }
@@ -642,7 +658,7 @@ internal partial class PopupPanel : Window
         var origin = SlotCenter(index);
         PInvoke.GetCursorPos(out var cursor);
         _grab = (origin.X - cursor.X, origin.Y - cursor.Y);
-        _ghost = new DragGhost(item.Icon, origin);
+        _ghost = new DragGhost(item.Icon, origin, item.IsFolder ? (Brush)Resources["TileBrush"] : null);
         _ghost.Show();
         _ghost.Lift();
         if (ContainerAt(index) is { } container)
@@ -650,9 +666,15 @@ internal partial class PopupPanel : Window
             container.Opacity = 0;
         }
 
-        var data = new DataObject(DataFormats.FileDrop, new[] { file.FullPath });
-        data.SetData(ItemFormat, file.Name);
-        data.SetData(FolderFormat, folder.Name);
+        // No file drop for a folder: nothing outside the list may move or copy the widget's folder.
+        var data = new DataObject();
+        if (item.Item is { } file)
+        {
+            data.SetData(DataFormats.FileDrop, new[] { file.FullPath });
+        }
+
+        data.SetData(ItemFormat, name);
+        data.SetData(FolderFormat, owner);
 
         DragDrop.AddQueryContinueDragHandler(source, OnQueryContinueDrag);
         DragDropEffects effect;
@@ -666,7 +688,7 @@ internal partial class PopupPanel : Window
             _dragging = false;
         }
 
-        FinishDrag(effect, file.Name);
+        FinishDrag(effect, name);
     }
 
     // Called on every mouse move of the drag, wherever the cursor is.
