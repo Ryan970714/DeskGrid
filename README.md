@@ -34,7 +34,7 @@ If the file was blocked, right-click it → **Properties** → check **Unblock**
 GitHub shows the SHA-256 of the exe on the release page, next to the file. To check that your download matches:
 
 ```powershell
-Get-FileHash .\DeskGrid-0.2.2-win-x64.exe -Algorithm SHA256
+Get-FileHash .\DeskGrid-0.2.3-win-x64.exe -Algorithm SHA256
 ```
 
 If you'd rather not trust a binary, [build it yourself](#build-from-source).

@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.3
+
+### Changed
+
+- The settings window uses the Fluent look: settings are grouped into rounded cards, and the window follows the system
+  light or dark mode.
+
+### Fixed
+
+- The taskbar shortcut to all folders is now named "DeskGrid" in every language; a shortcut left under the old name
+  is removed when it is created again. A taskbar pin made from the old shortcut keeps its name: unpin it and pin the
+  new one.
+- The plus on the "new folder" tile on the desktop sat off the tile's center.
+- Switching from the folder list to a folder with more items, or a folder gaining items while its panel was open,
+  didn't resize the panel.
+- Clicking a taskbar pin while its panel was open reopened the panel instead of closing it.
+- After a drag in a panel, a rescan held back during the drag could undo the new order.
+- Dropping something into a panel that couldn't be added left the gap opened for it.
+
 ## 0.2.2
 
 ### Changed
@@ -31,6 +50,22 @@
 - The title of the "all folders" panel is now "DeskGrid".
 
 ## 修正紀錄（繁體中文）
+
+### 0.2.3
+
+#### 變更
+
+- 設定視窗改用 Fluent 外觀：設定分組成圓角卡片，並跟隨系統淺色 / 深色模式。
+
+#### 修正
+
+- 「所有資料夾」的工作列捷徑在任何語言下都叫「DeskGrid」；重新建立時會刪掉舊名稱的捷徑。用舊捷徑釘選的工作列按鈕
+  名稱不會變，請取消釘選後改釘新的。
+- 桌面上「新增資料夾」磚的 + 不在正中間。
+- 從資料夾列表點進項目較多的資料夾，或面板開著時資料夾新增了項目，面板大小沒有跟著變。
+- 面板開著時再點工作列按鈕，面板會重新打開而不是收合。
+- 面板內拖曳後，拖曳中延後的重掃可能蓋掉新的排序。
+- 拖進面板但沒有任何項目可加入時，為它開的缺口不會合起來。
 
 ### 0.2.2
 

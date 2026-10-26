@@ -14,7 +14,7 @@
     <ApplicationIcon>Assets\DeskGrid.ico</ApplicationIcon>
 
     <!-- Release builds override Version from the git tag (see .github/workflows/release.yml). -->
-    <Version>0.2.2</Version>
+    <Version>0.2.3</Version>
     <Product>DeskGrid</Product>
     <Authors>Ryan Kuo</Authors>
     <Copyright>Copyright (c) 2026 Ryan Kuo</Copyright>
