@@ -44,7 +44,9 @@ SendMessageTimeout
 SetForegroundWindow
 SetWindowLong
 SetWindowPos
+SHCreateItemFromIDList
 SHCreateItemFromParsingName
+STGM
 SHOpenFolderAndSelectItems
 SHParseDisplayName
 ILFree

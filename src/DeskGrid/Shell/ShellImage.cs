@@ -7,6 +7,7 @@ using DeskGrid.Diagnostics;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.Graphics.Gdi;
+using Windows.Win32.System.Com;
 using Windows.Win32.UI.Shell;
 
 namespace DeskGrid.Shell;
@@ -26,14 +27,16 @@ internal static class ShellImage
     {
         try
         {
+            // A shortcut to an app without a file path is asked for through the app itself, not the .lnk.
+            if (path.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase) && TryGetLinkTargetIcon(path, size) is { } appIcon)
+            {
+                return appIcon;
+            }
+
             PInvoke.SHCreateItemFromParsingName(path, null, out IShellItemImageFactory factory).ThrowOnFailure();
             try
             {
-                var icon = GetImage(factory, size);
-
-                // An icon that has no large image comes back as a small one centered in a framed box. Ask for the
-                // small size instead, which fills the whole bitmap (the preview scales it up).
-                return LooksFramed(icon) ? GetImage(factory, SmallestFullSize) : icon;
+                return TryGetIcon(factory, size) ?? throw new COMException("The Shell has no image for this item.");
             }
             finally
             {
@@ -47,9 +50,132 @@ internal static class ShellImage
         }
     }
 
-    private static BitmapSource GetImage(IShellItemImageFactory factory, int size)
+    // Null if the factory can't give an image.
+    private static BitmapSource? TryGetIcon(IShellItemImageFactory factory, int size)
     {
-        factory.GetImage(new SIZE(size, size), SIIGBF.SIIGBF_ICONONLY, out var bitmap);
+        try
+        {
+            var icon = GetImage(factory, size);
+
+            // An icon that has no large image comes back as a small one centered in a framed box. Ask for the
+            // small size instead, which fills the whole bitmap (the preview scales it up).
+            return LooksFramed(icon) ? GetImage(factory, SmallestFullSize) : icon;
+        }
+        catch (COMException exception)
+        {
+            Log.Info($"Shell image failed: {exception.Message} (0x{exception.HResult:X8})");
+            return null;
+        }
+    }
+
+    // A shortcut to a Store app (Slack, WhatsApp...) has no file path, only a shell item ID list
+    // (shell:AppsFolder\<AppUserModelID>); asking for the .lnk's own icon gives a blank document.
+    private static unsafe BitmapSource? TryGetLinkTargetIcon(string path, int size)
+    {
+        var link = (IShellLinkW)new ShellLink();
+        try
+        {
+            ((IPersistFile)link).Load(path, STGM.STGM_READ);
+            Span<char> filePath = stackalloc char[260];
+            fixed (char* buffer = filePath)
+            {
+                link.GetPath(buffer, filePath.Length, null, 0);
+            }
+
+            if (filePath[0] != '\0')
+            {
+                return null;
+            }
+
+            link.GetIDList(out var idList);
+            if (idList is null)
+            {
+                return null;
+            }
+
+            try
+            {
+                PInvoke.SHCreateItemFromIDList(*idList, out IShellItem item).ThrowOnFailure();
+                try
+                {
+                    // A Store app's item built straight from the list answers with a generic icon; the same item
+                    // looked up again by its parsing name (shell:AppsFolder\<AppUserModelID>) has the real one.
+                    item.GetDisplayName(SIGDN.SIGDN_DESKTOPABSOLUTEPARSING, out var name);
+                    string parsingName;
+                    try
+                    {
+                        parsingName = name.ToString();
+                    }
+                    finally
+                    {
+                        Marshal.FreeCoTaskMem((nint)name.Value);
+                    }
+
+                    if (TryGetStoreAppIcon(parsingName, size) is { } appIcon)
+                    {
+                        return appIcon;
+                    }
+
+                    // Other apps without a file path (a known folder in their parsing name) answer from the item itself.
+                    return TryGetIcon((IShellItemImageFactory)item, size);
+                }
+                finally
+                {
+                    Marshal.ReleaseComObject(item);
+                }
+            }
+            finally
+            {
+                PInvoke.ILFree(idList);
+            }
+        }
+        catch (COMException exception)
+        {
+            Log.Info($"No link target for {path}: {exception.Message}");
+            return null;
+        }
+        finally
+        {
+            Marshal.ReleaseComObject(link);
+        }
+    }
+
+    // The icon of an entry in the Apps folder (Slack, WhatsApp...), or null if there is none.
+    private static BitmapSource? TryGetStoreAppIcon(string parsingName, int size)
+    {
+        if (!PInvoke.SHCreateItemFromParsingName(@"shell:AppsFolder\" + parsingName, null, out IShellItemImageFactory app).Succeeded)
+        {
+            return null;
+        }
+
+        try
+        {
+            // Some packages (measured: WhatsApp) have no logo of the size icon-only asks for and get a generic
+            // document; the same request without icon-only finds a smaller logo (88 px).
+            foreach (var flags in new[] { SIIGBF.SIIGBF_ICONONLY, SIIGBF.SIIGBF_RESIZETOFIT })
+            {
+                var icon = GetImage(app, size, flags);
+                if (!LooksFramed(icon))
+                {
+                    return icon;
+                }
+            }
+
+            return null;
+        }
+        catch (COMException)
+        {
+            return null;
+        }
+        finally
+        {
+            Marshal.ReleaseComObject(app);
+        }
+    }
+
+    private static BitmapSource GetImage(IShellItemImageFactory factory, int size, SIIGBF flags = SIIGBF.SIIGBF_ICONONLY)
+    {
+        factory.GetImage(new SIZE(size, size), flags, out var bitmap);
         using (bitmap)
         {
             return ToBitmapSource(new HBITMAP(bitmap.DangerousGetHandle()));
