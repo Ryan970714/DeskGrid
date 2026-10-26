@@ -1,5 +1,6 @@
 using System.Windows;
 using DeskGrid.Resources;
+using DeskGrid.Settings;
 
 namespace DeskGrid.Updates;
 
@@ -30,6 +31,7 @@ internal partial class UpdateDialog : Window
     public UpdateDialog(ReleaseInfo release, Func<IProgress<UpdateProgress>, Task<string?>> apply)
     {
         InitializeComponent();
+        FluentWindow.UseOpaqueBackground(this);
         _apply = apply;
         Title = Strings.UpdateTitle;
         Message.Text = string.Format(Strings.UpdateAvailable, release.Version.ToString(3), UpdateChecker.CurrentVersion.ToString(3));

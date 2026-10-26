@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ShutdownMode="OnExplicitShutdown">
   <Application.Resources>
-    <!-- Shared by the Fluent windows (settings, new folder). Translucent greys read as a card on both the light
+    <!-- Shared by the Fluent windows (settings, new folder, update). Translucent greys read as a card on both the light
          and the dark Fluent window background. -->
     <Style x:Key="Card" TargetType="Border">
       <Setter Property="Background" Value="#14808080" />
