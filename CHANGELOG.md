@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.4
+
+### Changed
+
+- The new folder dialog and the update dialog have the same Fluent look as the settings window: they follow the
+  system light or dark mode and group their content into a rounded card.
+
 ## 0.2.3
 
 ### Changed
@@ -50,6 +57,12 @@
 - The title of the "all folders" panel is now "DeskGrid".
 
 ## 修正紀錄（繁體中文）
+
+### 0.2.4
+
+#### 變更
+
+- 新增資料夾對話框與更新對話框改用與設定視窗相同的 Fluent 外觀：跟隨系統淺色 / 深色模式，內容放在圓角卡片中。
 
 ### 0.2.3
 
