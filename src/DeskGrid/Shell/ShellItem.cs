@@ -37,8 +37,22 @@ internal static class ShellItem
     }
 
     /// <summary>Shows <paramref name="path"/> selected in an Explorer window.</summary>
-    public static void Reveal(string path) =>
-        Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true })?.Dispose();
+    /// <remarks>
+    /// Through the shell API rather than <c>explorer /select</c>, which can answer a file that was just written
+    /// to a new folder with "Location is not available".
+    /// </remarks>
+    public static unsafe void Reveal(string path)
+    {
+        PInvoke.SHParseDisplayName(path, null, out var item, 0, out _).ThrowOnFailure();
+        try
+        {
+            PInvoke.SHOpenFolderAndSelectItems(item, 0, null, 0).ThrowOnFailure();
+        }
+        finally
+        {
+            PInvoke.ILFree(item);
+        }
+    }
 
     /// <summary>The name Explorer shows (e.g. "Google Chrome" for "Google Chrome.lnk").</summary>
     public static unsafe string GetDisplayName(string path)

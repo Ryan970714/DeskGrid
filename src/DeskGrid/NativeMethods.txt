@@ -45,6 +45,9 @@ SetForegroundWindow
 SetWindowLong
 SetWindowPos
 SHCreateItemFromParsingName
+SHOpenFolderAndSelectItems
+SHParseDisplayName
+ILFree
 ShellLink
 Shell_NotifyIcon
 SIGDN
