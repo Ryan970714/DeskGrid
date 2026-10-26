@@ -318,3 +318,21 @@
 **Alternatives**: 拖曳中完全不更新面板（資料夾被刪時會顯示舊內容）。
 **Consequences**: 第 2 項的原因是推測，未重現。
 **Author**: Claude
+
+---
+
+### 2026-10-26 — Store App 捷徑的圖示：Apps 資料夾 + 不帶 icon-only 的後備
+**Decision**: `.lnk` 沒有檔案路徑時，取其 ID list 的解析名稱，改對 `shell:AppsFolder\<名稱>` 要圖示；`ICONONLY` 得到通用文件圖示時，再以 `RESIZETOFIT` 要一次。兩者都失敗才用 ID list 項目本身，最後才用 `.lnk` 檔。
+**Reason**: 對 Store App 的 `.lnk` 要圖示得到空白文件。WhatsApp 套件沒有 `ICONONLY` 要求尺寸的 logo，Shell 回通用圖示；不帶 `ICONONLY` 會找到 88 px 的 logo。實測在測試程序裡加載 WPF 後同樣的呼叫會失敗，而 DPI-unaware 的執行緒內容在測試有效、在 DeskGrid（PerMonitorV2）無效，所以不採用。
+**Alternatives**: 讀套件 manifest 自己找 logo（需要 WinRT PackageManager，成本高）；DPI-unaware 執行緒（在本程式無效）。
+**Consequences**: 這類圖示可能只有 88 px，預覽以 48 DIP 顯示，影響不大。
+**Author**: Claude
+
+---
+
+### 2026-10-26 — 資料夾列表的順序存在 config `folderOrder`
+**Decision**: `AppConfig.FolderOrder`（資料夾名稱清單）決定「所有資料夾」面板的順序；新資料夾排最後，消失的移除，改名時就地替換。拖曳資料夾只帶自訂格式、不帶 `FileDrop`。
+**Reason**: 資料夾排序磁碟存不了，與項目排序（`ItemOrder`）同理放 config；不帶 `FileDrop` 以免放到桌面或別的 widget 時資料夾被搬走。
+**Alternatives**: 依名稱排序（無法自訂）。
+**Consequences**: `WidgetCatalog.Widgets` 依此排序，連帶影響沒存位置的新 widget 的擺放順序。
+**Author**: 使用者決定（要求可拖曳排序），Claude 實作
