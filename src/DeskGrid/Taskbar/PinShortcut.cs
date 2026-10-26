@@ -18,6 +18,11 @@ internal static class PinShortcut
     // Each shortcut is an app of its own to the taskbar; otherwise pins of the same program merge into one.
     private const string AppIdPrefix = "DeskGrid.Pin.";
 
+    // Not the "DeskGrid.Pin.All" of the shortcut up to 0.2.2: the taskbar treats a shortcut with the ID of a pinned
+    // one as already pinned, so the renamed shortcut couldn't be pinned while (or after, its entry lingering hidden)
+    // the old one was.
+    private const string AllFoldersAppId = AppIdPrefix + "AllFolders";
+
     private static readonly Brush TileBrush = new SolidColorBrush(Color.FromArgb(0xB0, 0x40, 0x40, 0x40));
 
     public static string FolderPath { get; } =
@@ -60,7 +65,7 @@ internal static class PinShortcut
         }
 
         var program = Environment.ProcessPath!;
-        ShortcutFile.Create(shortcutPath, program, OpenRequest.AllFoldersArguments, program, AppIdPrefix + "All");
+        ShortcutFile.Create(shortcutPath, program, OpenRequest.AllFoldersArguments, program, AllFoldersAppId);
         return shortcutPath;
     }
 
