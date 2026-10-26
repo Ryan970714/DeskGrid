@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.2
+
+### Changed
+
+- The Update button now does the whole update in one dialog and shows its status live: the download with percent and
+  size, then verifying the checksum, then installing and restarting. If the swap fails, the error is shown in the
+  dialog and the update can be retried, instead of opening the release page.
+
 ## 0.2.1
 
 ### Fixed
@@ -23,6 +31,13 @@
 - The title of the "all folders" panel is now "DeskGrid".
 
 ## 修正紀錄（繁體中文）
+
+### 0.2.2
+
+#### 變更
+
+- 「更新」按鈕現在在同一個對話框內完成整個更新，並即時顯示狀態：下載（百分比與大小）、驗證校驗碼、安裝並重新啟動。
+  換檔失敗時錯誤會顯示在對話框內，可以重試，不再改開 release 頁面。
 
 ### 0.2.1
 
