@@ -300,3 +300,21 @@
 **Alternatives**: 把 `DispatcherUnhandledException` 設成 Handled（連真正的程式錯誤也吞掉，計時器例外會洗版）；`Save` 回傳成功與否（呼叫端無從補救）。
 **Consequences**: 存檔失敗時使用者看不到提示，只在 log；設定可能在該次執行中途遺失。
 **Author**: Claude（使用者要求找 bug 並修正）
+
+---
+
+### 2026-10-26 — 工作列「所有資料夾」：同一個面板視窗切換列表 / 資料夾；釘選捷徑各帶 AppUserModelID
+**Decision**: 系統匣「把所有資料夾釘選到工作列…」建 `%APPDATA%\DeskGrid\Pins\All\DeskGrid 資料夾.lnk`（`DeskGrid.exe --all`，exe 圖示），管線訊息 `*`（不可能是資料夾名）。面板以列表模式開在游標處，資料夾格與桌面 widget 同樣的底板 + 2×2 預覽；點資料夾在**同一個視窗**換成該資料夾內容（啟動、重排、拖出、改名照舊），標題左側 ← 回列表。所有釘選捷徑寫入 `System.AppUserModel.ID`（`DeskGrid.Pin.All`、`DeskGrid.Pin.Folder.<名稱 SHA-256 前 8 bytes>`）。
+**Reason**: 使用者要求工作列按鈕列出所有資料夾、之後邏輯同桌面資料夾。就地切換不必在拖曳 / 啟用之間開關兩個視窗；同一 exe 的捷徑沒有各自 AppUserModelID 時工作列會把它們當同一個 App 合併。
+**Alternatives**: 點資料夾另開一個面板（要處理兩個面板與焦點）；工作列跳躍清單（點按鈕不會直接顯示）。
+**Consequences**: 列表模式的資料夾格不接受拖放、不可拖動；舊版建立的資料夾釘選捷徑沒有 AppUserModelID，重建即可。
+**Author**: Claude（使用者需求）
+
+---
+
+### 2026-10-26 — 面板拖出判斷用實體像素並在 QueryContinueDrag 補偵測；拖曳中重掃延後
+**Decision**: 判斷游標是否離開面板改用 `GetWindowRect` + `GetCursorPos`（實體像素），並在每次 `QueryContinueDrag` 也檢查，不只依賴 `DragLeave`。拖曳進行中收到的重掃先存起來，放開後再套用；放回面板時落地中的項目即使被重建也維持隱藏直到影子到位。`DragGhost` 在 `SourceInitialized` 定位（顯示前），Lift / Land 共用一個計時器。
+**Reason**: 使用者回報「拖出有時不收合」「拖曳影子有時顯示不正確」。DIP 換算會讓剛從右 / 下邊離開的游標被判在內，之後 `DragLeave` 不會再來；拖曳中重建項目會讓拖曳索引與原格錯亂；重排後新格立刻顯示造成雙圖示。
+**Alternatives**: 拖曳中完全不更新面板（資料夾被刪時會顯示舊內容）。
+**Consequences**: 第 2 項的原因是推測，未重現。
+**Author**: Claude

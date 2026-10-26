@@ -17,7 +17,10 @@ internal sealed record PanelTheme(bool UseAcrylic, Color Background, Color Foreg
 
     public Color Hover => IsDark ? Color.FromArgb(0x26, 0xFF, 0xFF, 0xFF) : Color.FromArgb(0x14, 0x00, 0x00, 0x00);
 
-    public Color Outline => IsDark ? Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF) : Color.FromArgb(0x1A, 0x00, 0x00, 0x00);
+    /// <summary>The rounded square behind a folder's preview, like a widget's on the desktop.</summary>
+    public Color Tile => IsDark ? Color.FromArgb(0x4D, 0xFF, 0xFF, 0xFF) : Color.FromArgb(0x1A, 0x00, 0x00, 0x00);
+
+    public Color Outline =>IsDark ? Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF) : Color.FromArgb(0x1A, 0x00, 0x00, 0x00);
 
     /// <summary>Whether apps use the dark theme (Settings > Personalization > Colors).</summary>
     public static bool SystemUsesDarkTheme =>

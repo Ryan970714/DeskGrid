@@ -117,6 +117,7 @@ public partial class App : Application
     [
         new(Strings.TrayNewFolder, CreateFolder),
         new(Strings.TrayOpenRoot, () => ShellItem.Open(_configStore!.Config.RootPath)),
+        new(Strings.TrayPinAllFolders, PinAllFoldersToTaskbar),
         new(Strings.TraySettings, ShowSettings),
         TrayMenuItem.Separator,
         new(Strings.TrayAutoStart, () => _autoStart!.SetEnabled(!_autoStart.IsEnabled), _autoStart!.IsEnabled),
@@ -159,10 +160,17 @@ public partial class App : Application
         (_board, _catalog) = (null, null);
     }
 
-    // A taskbar button was clicked: show that folder's panel above it.
+    // A taskbar button was clicked: show that folder's panel, or the list of all folders, above it.
     private void OpenPanel(string folderName)
     {
-        if (_catalog?.Widgets.FirstOrDefault(w => string.Equals(w.Name, folderName, StringComparison.OrdinalIgnoreCase)) is { } folder)
+        if (folderName == OpenRequest.AllFolders)
+        {
+            if (_catalog is { } catalog)
+            {
+                _panels!.ToggleListAtCursor(catalog.Widgets);
+            }
+        }
+        else if (_catalog?.Widgets.FirstOrDefault(w => string.Equals(w.Name, folderName, StringComparison.OrdinalIgnoreCase)) is { } folder)
         {
             _panels!.ToggleAtCursor(folder);
         }
@@ -234,6 +242,20 @@ public partial class App : Application
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
         {
             Log.Error($"Creating the taskbar shortcut for \"{folder.Name}\" failed", exception);
+            MessageBox.Show(string.Format(Strings.PinFailed, exception.Message), Strings.AppName, MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void PinAllFoldersToTaskbar()
+    {
+        try
+        {
+            ShellItem.Reveal(PinShortcut.CreateForAllFolders(Strings.PanelAllFolders));
+            MessageBox.Show(string.Format(Strings.PinCreated, Strings.PanelAllFolders), Strings.AppName, MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
+        {
+            Log.Error("Creating the taskbar shortcut for all folders failed", exception);
             MessageBox.Show(string.Format(Strings.PinFailed, exception.Message), Strings.AppName, MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }

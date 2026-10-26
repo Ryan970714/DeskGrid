@@ -30,14 +30,27 @@ internal sealed class PanelController(ConfigStore configStore, IconService icons
     /// </summary>
     public void Toggle(WidgetFolder folder, ScreenRect anchor)
     {
-        var wasOpen = _panel is { } open && Same(open.Folder, folder);
+        var wasOpen = _panel is { IsFolderList: false, Folder: { } shown } && Same(shown, folder);
         _panel?.Dismiss();
         if (wasOpen)
         {
             return;
         }
 
-        Open(folder, anchor, activate: true);
+        Open(anchor, activate: true, panel => panel.ShowFolder(folder));
+    }
+
+    /// <summary>Opens the list of all folders at the cursor (asked for from the taskbar), or closes it if it is open.</summary>
+    public void ToggleListAtCursor(IReadOnlyList<WidgetFolder> folders)
+    {
+        var wasOpen = _panel is { IsFolderList: true };
+        _panel?.Dismiss();
+        if (wasOpen)
+        {
+            return;
+        }
+
+        Open(CursorRect(), activate: true, panel => panel.ShowList(folders));
     }
 
     /// <summary>
@@ -48,7 +61,7 @@ internal sealed class PanelController(ConfigStore configStore, IconService icons
     {
         if (_panel is { } current)
         {
-            if (Same(current.Folder, folder))
+            if (current.Folder is { } shown && Same(shown, folder))
             {
                 return;
             }
@@ -63,29 +76,16 @@ internal sealed class PanelController(ConfigStore configStore, IconService icons
             }
         }
 
-        Open(folder, anchor, activate: false);
+        Open(anchor, activate: false, panel => panel.ShowFolder(folder));
     }
 
     /// <summary>Like <see cref="Toggle"/>, for a panel asked for from outside the desktop (e.g. the taskbar): opens at the cursor.</summary>
-    public void ToggleAtCursor(WidgetFolder folder)
-    {
-        PInvoke.GetCursorPos(out var cursor);
-        Toggle(folder, new ScreenRect(cursor.X, cursor.Y, cursor.X + 1, cursor.Y + 1));
-    }
+    public void ToggleAtCursor(WidgetFolder folder) => Toggle(folder, CursorRect());
 
     /// <summary>Refreshes the open panel after a rescan, or closes it if its folder is gone.</summary>
     public void Refresh(IReadOnlyList<WidgetFolder> widgets)
     {
-        if (_panel is not { } panel)
-        {
-            return;
-        }
-
-        if (widgets.FirstOrDefault(w => Same(w, panel.Folder)) is { } folder)
-        {
-            panel.ShowFolder(folder);
-        }
-        else
+        if (_panel is { } panel && !panel.Refresh(widgets))
         {
             panel.Dismiss();
         }
@@ -93,16 +93,23 @@ internal sealed class PanelController(ConfigStore configStore, IconService icons
 
     public void Close() => _panel?.Dismiss();
 
-    private void Open(WidgetFolder folder, ScreenRect anchor, bool activate)
+    private static ScreenRect CursorRect()
+    {
+        PInvoke.GetCursorPos(out var cursor);
+        return new ScreenRect(cursor.X, cursor.Y, cursor.X + 1, cursor.Y + 1);
+    }
+
+    private void Open(ScreenRect anchor, bool activate, Action<PopupPanel> fill)
     {
         var config = configStore.Config;
         var theme = PanelTheme.Resolve(config.PanelBackground, PanelTheme.SystemUsesDarkTheme, Backdrop.IsAcrylicSupported);
-        var panel = new PopupPanel(folder, anchor, Math.Clamp(config.PanelColumns, MinColumns, MaxColumns), theme, icons)
+        var panel = new PopupPanel(anchor, Math.Clamp(config.PanelColumns, MinColumns, MaxColumns), theme, icons)
         {
             ActivateWhenShown = activate,
             ShowActivated = activate,
             Renamer = (oldName, newName) => FolderRenamer?.Invoke(oldName, newName),
         };
+        fill(panel);
         panel.ItemInvoked += (_, item) =>
         {
             ShellItem.Open(item.FullPath);

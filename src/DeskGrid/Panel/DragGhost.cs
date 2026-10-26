@@ -26,9 +26,12 @@ internal sealed class DragGhost : Window
     private readonly ScaleTransform _scale = new(1, 1);
     private readonly Grid _content = new();
     private ScreenPoint _center;
+    private DispatcherTimer? _animation;
 
-    public DragGhost(ImageSource? icon)
+    /// <param name="center">Where the icon's center first appears, in physical screen pixels.</param>
+    public DragGhost(ImageSource? icon, ScreenPoint center)
     {
+        _center = center;
         WindowStyle = WindowStyle.None;
         AllowsTransparency = true;
         Background = Brushes.Transparent;
@@ -58,11 +61,22 @@ internal sealed class DragGhost : Window
             var style = (WINDOW_EX_STYLE)PInvoke.GetWindowLong(window, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
             style |= WINDOW_EX_STYLE.WS_EX_TRANSPARENT | WINDOW_EX_STYLE.WS_EX_NOACTIVATE | WINDOW_EX_STYLE.WS_EX_TOOLWINDOW;
             PInvoke.SetWindowLong(window, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, (int)style);
+
+            // In place before the window first appears, so it never shows up anywhere else for a moment.
+            PlaceCenter(_center);
         };
     }
 
     /// <summary>The icon's size grows a little, as if picked up.</summary>
-    public void Lift() => Scale(LiftedScale, LiftTime);
+    public void Lift()
+    {
+        var from = _scale.ScaleX;
+        Animate(LiftTime, t =>
+        {
+            var scale = from + (LiftedScale - from) * (1 - (1 - t) * (1 - t));
+            (_scale.ScaleX, _scale.ScaleY) = (scale, scale);
+        });
+    }
 
     /// <summary>Puts the icon's center at <paramref name="center"/> (physical screen pixels), above everything else.</summary>
     public void PlaceCenter(ScreenPoint center)
@@ -84,11 +98,8 @@ internal sealed class DragGhost : Window
         var from = _center;
         var startScale = _scale.ScaleX;
         var endScale = vanish ? 0.4 : 1.0;
-        var clock = System.Diagnostics.Stopwatch.StartNew();
-        var timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(8) };
-        timer.Tick += (_, _) =>
+        Animate(LandTime, t =>
         {
-            var t = Math.Min(1, clock.Elapsed / LandTime);
             var eased = 1 - (1 - t) * (1 - t) * (1 - t);
             if (!vanish)
             {
@@ -101,29 +112,28 @@ internal sealed class DragGhost : Window
             Opacity = vanish ? 1 - eased : 1;
             if (t >= 1)
             {
-                timer.Stop();
                 Close();
                 done?.Invoke();
             }
-        };
-        timer.Start();
+        });
     }
 
-    private void Scale(double to, TimeSpan time)
+    // Runs step(t) for t going from 0 to 1 over the given time. A new animation replaces the running one, so a drag
+    // that ends before the lift is over doesn't have both fighting over the icon's size.
+    private void Animate(TimeSpan time, Action<double> step)
     {
-        var from = _scale.ScaleX;
+        _animation?.Stop();
         var clock = System.Diagnostics.Stopwatch.StartNew();
-        var timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(8) };
+        var timer = _animation = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(8) };
         timer.Tick += (_, _) =>
         {
             var t = Math.Min(1, clock.Elapsed / time);
-            var eased = 1 - (1 - t) * (1 - t);
-            var scale = from + (to - from) * eased;
-            (_scale.ScaleX, _scale.ScaleY) = (scale, scale);
             if (t >= 1)
             {
                 timer.Stop();
             }
+
+            step(t);
         };
         timer.Start();
     }

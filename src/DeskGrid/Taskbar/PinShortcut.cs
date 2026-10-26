@@ -7,18 +7,24 @@ using DeskGrid.Shell;
 namespace DeskGrid.Taskbar;
 
 /// <summary>
-/// Creates the shortcut that, once pinned to the taskbar, opens a widget folder's panel. Windows lets only
-/// the user pin, so the shortcut is created in a folder of ours and shown to them.
+/// Creates the shortcuts that, once pinned to the taskbar, open a widget folder's panel or the list of all
+/// folders. Windows lets only the user pin, so the shortcut is created in a folder of ours and shown to them.
 /// </summary>
 internal static class PinShortcut
 {
     private const int IconSize = 256;
     private const double TileCornerRadius = 57;
 
+    // Each shortcut is an app of its own to the taskbar; otherwise pins of the same program merge into one.
+    private const string AppIdPrefix = "DeskGrid.Pin.";
+
     private static readonly Brush TileBrush = new SolidColorBrush(Color.FromArgb(0xB0, 0x40, 0x40, 0x40));
 
     public static string FolderPath { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DeskGrid", "Pins");
+
+    // A folder of its own, so no widget folder's shortcut can have the same name.
+    private static string AllFoldersPath { get; } = Path.Combine(FolderPath, "All");
 
     /// <summary>
     /// Writes <paramref name="folderName"/>.lnk (and its icon, drawn from <paramref name="preview"/>) and returns its path.
@@ -31,9 +37,27 @@ internal static class PinShortcut
         var shortcutPath = Path.Combine(FolderPath, folderName + ".lnk");
 
         File.WriteAllBytes(iconPath, ToIcon(preview));
-        ShortcutFile.Create(shortcutPath, Environment.ProcessPath!, OpenRequest.Arguments(folderName), iconPath);
+        ShortcutFile.Create(shortcutPath, Environment.ProcessPath!, OpenRequest.Arguments(folderName), iconPath, AppId(folderName));
         return shortcutPath;
     }
+
+    /// <summary>
+    /// Writes the shortcut to the list of all folders, named <paramref name="displayName"/> and showing DeskGrid's own
+    /// icon, and returns its path. Call on the UI thread.
+    /// </summary>
+    public static string CreateForAllFolders(string displayName)
+    {
+        Directory.CreateDirectory(AllFoldersPath);
+        var shortcutPath = Path.Combine(AllFoldersPath, displayName + ".lnk");
+        var program = Environment.ProcessPath!;
+        ShortcutFile.Create(shortcutPath, program, OpenRequest.AllFoldersArguments, program, AppIdPrefix + "All");
+        return shortcutPath;
+    }
+
+    // At most 128 characters and no spaces, so the folder name goes in as a hash.
+    internal static string AppId(string folderName) =>
+        AppIdPrefix + "Folder." + Convert.ToHexString(
+            System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(folderName.ToUpperInvariant())), 0, 8);
 
     // The preview on the same kind of tile the widget has, as a single-image (PNG) .ico.
     private static byte[] ToIcon(BitmapSource preview)

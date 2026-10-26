@@ -1,7 +1,11 @@
 using System.IO;
 using System.Runtime.InteropServices;
+using Windows.Win32;
 using Windows.Win32.System.Com;
+using Windows.Win32.System.Com.StructuredStorage;
+using Windows.Win32.System.Variant;
 using Windows.Win32.UI.Shell;
+using Windows.Win32.UI.Shell.PropertiesSystem;
 
 namespace DeskGrid.Shell;
 
@@ -11,15 +15,18 @@ internal static class ShortcutFile
     /// <summary>
     /// Creates <paramref name="shortcutPath"/>, a shortcut that opens <paramref name="target"/> (a file or folder),
     /// or starts it with <paramref name="arguments"/> if it is a program, showing <paramref name="iconPath"/> if given.
+    /// <paramref name="appUserModelId"/> makes the taskbar treat the shortcut as an app of its own, so several
+    /// shortcuts to the same program can be pinned side by side.
     /// </summary>
-    public static unsafe void Create(string shortcutPath, string target, string? arguments = null, string? iconPath = null)
+    public static unsafe void Create(
+        string shortcutPath, string target, string? arguments = null, string? iconPath = null, string? appUserModelId = null)
     {
         var link = (IShellLinkW)new ShellLink();
         try
         {
             // Start in the target's own folder, as Explorer's "Create shortcut" does.
             fixed (char* targetPath = target, workingDirectory = Path.GetDirectoryName(target) ?? "", file = shortcutPath)
-            fixed (char* argumentText = arguments, iconFile = iconPath)
+            fixed (char* argumentText = arguments, iconFile = iconPath, appId = appUserModelId)
             {
                 link.SetPath(targetPath);
                 link.SetWorkingDirectory(workingDirectory);
@@ -31,6 +38,17 @@ internal static class ShortcutFile
                 if (iconPath is not null)
                 {
                     link.SetIconLocation(iconFile, 0);
+                }
+
+                if (appUserModelId is not null)
+                {
+                    // The store copies the value, so pointing it at the pinned string is enough.
+                    var value = new PROPVARIANT();
+                    value.Anonymous.Anonymous.vt = VARENUM.VT_LPWSTR;
+                    value.Anonymous.Anonymous.Anonymous.pwszVal = appId;
+                    var properties = (IPropertyStore)link;
+                    properties.SetValue(PInvoke.PKEY_AppUserModel_ID, value);
+                    properties.Commit();
                 }
 
                 ((IPersistFile)link).Save(file, true);

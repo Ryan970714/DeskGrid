@@ -11,6 +11,7 @@
   <Window.Resources>
     <!-- Set from the theme in code. -->
     <SolidColorBrush x:Key="HoverBrush" Color="Transparent" />
+    <SolidColorBrush x:Key="TileBrush" Color="Transparent" />
 
     <Style x:Key="ItemButton" TargetType="Button">
       <Setter Property="Width" Value="76" />
@@ -64,7 +65,8 @@
 
   <Border x:Name="Frame" Padding="12">
     <StackPanel>
-      <!-- The folder's name; hovering shows a pencil, clicking turns it into a box to rename the folder. -->
+      <!-- The folder's name; hovering shows a pencil, clicking turns it into a box to rename the folder.
+           A folder opened from the list of all folders has an arrow back to the list. -->
       <Grid x:Name="HeadingBar" Margin="0,0,0,8" Background="Transparent"
             MouseEnter="OnHeadingEnter" MouseLeave="OnHeadingLeave" MouseLeftButtonUp="OnHeadingClick">
         <Grid.ColumnDefinitions>
@@ -72,6 +74,21 @@
           <ColumnDefinition Width="*" />
           <ColumnDefinition Width="24" />
         </Grid.ColumnDefinitions>
+        <Border x:Name="BackButton"
+                Grid.Column="0"
+                Visibility="Collapsed"
+                CornerRadius="4"
+                Background="Transparent"
+                Cursor="Hand"
+                MouseEnter="OnBackEnter"
+                MouseLeave="OnBackLeave"
+                MouseLeftButtonUp="OnBackClick">
+          <TextBlock FontFamily="Segoe MDL2 Assets"
+                     FontSize="13"
+                     Text="&#xE72B;"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center" />
+        </Border>
         <TextBlock x:Name="Heading"
                    Grid.Column="1"
                    FontSize="16"
@@ -116,7 +133,10 @@
               <Button Style="{StaticResource ItemButton}" Click="OnItemClick" ToolTip="{Binding Name}"
                       PreviewMouseLeftButtonDown="OnItemPress" PreviewMouseMove="OnItemMove" PreviewMouseLeftButtonUp="OnItemRelease">
                 <StackPanel>
-                  <Image Source="{Binding Icon}" Width="48" Height="48" RenderOptions.BitmapScalingMode="HighQuality" />
+                  <!-- A folder (in the list of all folders) sits on a tile, like its widget on the desktop. -->
+                  <Border x:Name="Tile" Width="48" Height="48" CornerRadius="10.7">
+                    <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality" />
+                  </Border>
                   <TextBlock x:Name="Label"
                              Text="{Binding Name}"
                              Margin="0,4,0,0"
@@ -128,6 +148,12 @@
                              FontSize="{x:Static SystemFonts.IconFontSize}" />
                 </StackPanel>
               </Button>
+              <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsFolder}" Value="True">
+                  <Setter TargetName="Tile" Property="Background" Value="{DynamicResource TileBrush}" />
+                  <Setter TargetName="Tile" Property="Padding" Value="5.8" />
+                </DataTrigger>
+              </DataTemplate.Triggers>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>

@@ -20,8 +20,10 @@ GetObject
 GetParent
 GetSystemMetrics
 GetWindowLong
+GetWindowRect
 GetWindowThreadProcessId
 IPersistFile
+IPropertyStore
 IShellItem
 IShellItemImageFactory
 IShellLinkW
@@ -32,7 +34,9 @@ MonitorFromPoint
 NIN_SELECT
 NOTIFYICON_VERSION_4
 OpenProcess
+PKEY_AppUserModel_ID
 PostMessage
+PROPVARIANT
 ReadProcessMemory
 RegisterWindowMessage
 ScreenToClient

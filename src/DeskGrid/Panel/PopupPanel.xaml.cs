@@ -21,6 +21,8 @@ namespace DeskGrid.Panel;
 /// The grid of a folder's items that opens next to its widget. Fixed column count, scrolls past
 /// <see cref="MaxVisibleRows"/> rows. Closes itself on Esc or when it loses activation. Items can be dragged
 /// (the others slide out of the way like on a phone's home screen), and the folder's name can be edited.
+/// Opened from the taskbar it can also list all folders instead; clicking one shows that folder's items in
+/// the same window, with an arrow back to the list.
 /// </summary>
 internal partial class PopupPanel : Window
 {
@@ -52,6 +54,9 @@ internal partial class PopupPanel : Window
     private bool _renaming;
     private DispatcherTimer? _resize;
 
+    // All folders, if this panel was opened as their list; null for the panel of a single folder.
+    private IReadOnlyList<WidgetFolder>? _list;
+
     // Dragging an item out of this panel: its index, the slot it would land in (-1 outside the panel), the
     // cursor-to-icon offset, and what to do once the drag is over.
     private int _dragIndex = -1;
@@ -61,24 +66,28 @@ internal partial class PopupPanel : Window
     private ScreenPoint? _landing;
     private ItemReorderedEventArgs? _pendingReorder;
 
+    // A rescan that arrived mid-drag (shown when the drag is over), and the item whose icon is still flying
+    // back to its slot, which stays empty until it lands.
+    private IReadOnlyList<WidgetFolder>? _deferred;
+    private string? _settlingItem;
+
     // Something dragged over this panel from elsewhere: the slot left open for it, or -1.
     private int _gap = -1;
 
-    public PopupPanel(WidgetFolder folder, ScreenRect anchor, int columns, PanelTheme theme, IconService icons)
+    /// <summary>Call <see cref="ShowFolder"/> or <see cref="ShowList"/> before showing the panel.</summary>
+    public PopupPanel(ScreenRect anchor, int columns, PanelTheme theme, IconService icons)
     {
         InitializeComponent();
         _anchor = anchor;
         _theme = theme;
         _icons = icons;
         _columns = columns;
-        Folder = folder;
 
         ApplyTheme();
-        EmptyHint.Text = Strings.PanelEmpty;
         EditGlyph.ToolTip = Strings.PanelRename;
+        BackButton.ToolTip = Strings.PanelBack;
         Items.Width = columns * ItemWidth;
         Scroller.MaxHeight = MaxVisibleRows * ItemHeight;
-        ShowFolder(folder);
 
         SourceInitialized += OnSourceInitialized;
         Closing += (_, _) => _closing = true;
@@ -112,7 +121,11 @@ internal partial class PopupPanel : Window
     /// <summary>Renames the folder on disk: old name, new name; returns why not, or <see langword="null"/> on success.</summary>
     public Func<string, string, string?>? Renamer { get; set; }
 
-    public WidgetFolder Folder { get; private set; }
+    /// <summary>The folder whose items are shown, or <see langword="null"/> while the list of all folders is.</summary>
+    public WidgetFolder? Folder { get; private set; }
+
+    /// <summary>Whether this panel was opened as the list of all folders (it may be showing one of them now).</summary>
+    public bool IsFolderList => _list is not null;
 
     /// <summary>
     /// Whether the panel takes the focus when it appears. Off for one that opens in the middle of a drag, where
@@ -123,24 +136,57 @@ internal partial class PopupPanel : Window
     /// <summary>Whether one of this panel's items is being dragged.</summary>
     public bool IsDragSource => _dragging;
 
-    /// <summary>Shows <paramref name="folder"/>'s current items; also used to refresh an open panel.</summary>
+    /// <summary>Shows <paramref name="folder"/>'s current items.</summary>
     public void ShowFolder(WidgetFolder folder)
     {
         Folder = folder;
         Heading.Text = folder.Name;
-        _items = [.. folder.Items.Select(i => new PanelItem(i))];
-        Items.ItemsSource = _items;
-        EmptyHint.Visibility = _items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        foreach (var item in _items)
+        ShowItems(folder.Items.Select(i => new PanelItem(i)), Strings.PanelEmpty);
+    }
+
+    /// <summary>Shows every folder; clicking one shows its items here.</summary>
+    public void ShowList(IReadOnlyList<WidgetFolder> folders)
+    {
+        _list = folders;
+        Folder = null;
+        Heading.Text = Strings.PanelAllFolders;
+        ShowItems(folders.Select(f => new PanelItem(f)), Strings.PanelNoFolders);
+    }
+
+    /// <summary>
+    /// Shows the folders as they are after a rescan. Returns <see langword="false"/> if what this panel shows is
+    /// gone (its folder was deleted or renamed elsewhere), so it should close.
+    /// </summary>
+    public bool Refresh(IReadOnlyList<WidgetFolder> widgets)
+    {
+        if (_dragging)
         {
-            _ = item.LoadIconAsync(_icons);
+            // Rebuilding the items now would pull the dragged one out from under the drag.
+            _deferred = widgets;
+            return true;
         }
 
-        FitToContent();
-        if (new WindowInteropHelper(this).Handle is not 0 and var window)
+        if (_list is not null)
         {
-            Reposition(new HWND(window));
+            _list = widgets;
         }
+
+        if (Folder is { } shown)
+        {
+            if (widgets.FirstOrDefault(w => string.Equals(w.Name, shown.Name, StringComparison.OrdinalIgnoreCase)) is { } folder)
+            {
+                ShowFolder(folder);
+                return true;
+            }
+
+            if (_list is null)
+            {
+                return false;
+            }
+        }
+
+        ShowList(widgets);
+        return true;
     }
 
     /// <summary>Closes the panel unless it is already closing.</summary>
@@ -164,7 +210,12 @@ internal partial class PopupPanel : Window
 
     protected override void OnDragOver(DragEventArgs e)
     {
-        if (IsOwnItem(e))
+        if (_hiddenForDrag || Folder is null)
+        {
+            // Gone from the screen (it may still be hit), or showing the list of folders: nothing to drop on.
+            e.Effects = DragDropEffects.None;
+        }
+        else if (IsOwnItem(e))
         {
             var slot = SlotAt(e.GetPosition(Items), _items.Count - 1) ?? _slot;
             if (slot != _slot)
@@ -203,17 +254,14 @@ internal partial class PopupPanel : Window
     protected override void OnDragLeave(DragEventArgs e)
     {
         // DragLeave also arrives from the children while the cursor is still inside the window.
-        PInvoke.GetCursorPos(out var cursor);
-        if (new Rect(RenderSize).Contains(PointFromScreen(new Point(cursor.X, cursor.Y))))
+        if (_closing || CursorOverWindow())
         {
             return;
         }
 
         if (_dragIndex >= 0)
         {
-            // Taken out of the folder: it closes (the drag goes on, so the window only disappears).
-            _slot = -1;
-            HideForDrag();
+            TakeOut();
         }
         else if (_gap >= 0)
         {
@@ -225,13 +273,17 @@ internal partial class PopupPanel : Window
 
     protected override void OnDrop(DragEventArgs e)
     {
-        if (IsOwnItem(e) && e.Data.GetData(ItemFormat) is string name)
+        if (_hiddenForDrag || Folder is not { } folder)
+        {
+            e.Effects = DragDropEffects.None;
+        }
+        else if (IsOwnItem(e) && e.Data.GetData(ItemFormat) is string name)
         {
             _reordered = true;
             if (_slot >= 0)
             {
                 _landing = SlotCenter(_slot);
-                _pendingReorder = new ItemReorderedEventArgs(Folder.Name, name, _slot);
+                _pendingReorder = new ItemReorderedEventArgs(folder.Name, name, _slot);
             }
 
             e.Effects = DragDropEffects.Move;
@@ -242,7 +294,7 @@ internal partial class PopupPanel : Window
             _gap = -1;
             _resize?.Stop();
             Items.MinHeight = 0; // the refresh that follows sizes the window for the new item
-            ItemsDropped?.Invoke(this, new ItemsDroppedEventArgs(Folder.Name, paths, index));
+            ItemsDropped?.Invoke(this, new ItemsDroppedEventArgs(folder.Name, paths, index));
             FitToContent();
 
             // We moved or copied the files ourselves; never report Move, or the source would delete them again.
@@ -264,13 +316,51 @@ internal partial class PopupPanel : Window
     }
 
     private bool IsOwnItem(DragEventArgs e) =>
-        _dragIndex >= 0 && e.Data.GetDataPresent(ItemFormat)
-        && e.Data.GetData(FolderFormat) is string folder && string.Equals(folder, Folder.Name, StringComparison.OrdinalIgnoreCase);
+        _dragIndex >= 0 && Folder is { } shown && e.Data.GetDataPresent(ItemFormat)
+        && e.Data.GetData(FolderFormat) is string folder && string.Equals(folder, shown.Name, StringComparison.OrdinalIgnoreCase);
+
+    // Compared in physical pixels, as the window manager does: in DIPs, a cursor that has just left through the
+    // right or bottom edge can round back inside, and the panel would miss that the item was taken out.
+    private bool CursorOverWindow()
+    {
+        PInvoke.GetCursorPos(out var cursor);
+        PInvoke.GetWindowRect(new HWND(new WindowInteropHelper(this).Handle), out var bounds);
+        return cursor.X >= bounds.left && cursor.X < bounds.right && cursor.Y >= bounds.top && cursor.Y < bounds.bottom;
+    }
+
+    private void ShowItems(IEnumerable<PanelItem> items, string emptyHint)
+    {
+        _pressed = null;
+        _items = [.. items];
+        Items.ItemsSource = _items;
+        EmptyHint.Text = emptyHint;
+        EmptyHint.Visibility = _items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        BackButton.Visibility = _list is not null && Folder is not null ? Visibility.Visible : Visibility.Collapsed;
+        foreach (var item in _items)
+        {
+            _ = item.LoadIconAsync(_icons);
+        }
+
+        FitToContent();
+
+        // Measuring has made the item containers. The icon of a dropped item is still on its way to its slot.
+        if (_settlingItem is { } name
+            && ContainerAt(_items.FindIndex(i => string.Equals(i.Item?.Name, name, StringComparison.OrdinalIgnoreCase))) is { } landing)
+        {
+            landing.Opacity = 0;
+        }
+
+        if (new WindowInteropHelper(this).Handle is not 0 and var window)
+        {
+            Reposition(new HWND(window));
+        }
+    }
 
     private void ApplyTheme()
     {
         Foreground = new SolidColorBrush(_theme.Foreground);
         Resources["HoverBrush"] = new SolidColorBrush(_theme.Hover);
+        Resources["TileBrush"] = new SolidColorBrush(_theme.Tile);
 
         if (_theme.UseAcrylic)
         {
@@ -399,7 +489,9 @@ internal partial class PopupPanel : Window
 
     // ---- Renaming the folder ----
 
-    private void OnHeadingEnter(object sender, MouseEventArgs e) => FadeGlyph(0.8);
+    private bool CanRename => Folder is not null && Renamer is not null;
+
+    private void OnHeadingEnter(object sender, MouseEventArgs e) => FadeGlyph(CanRename ? 0.8 : 0);
 
     private void OnHeadingLeave(object sender, MouseEventArgs e) => FadeGlyph(0);
 
@@ -408,13 +500,13 @@ internal partial class PopupPanel : Window
 
     private void OnHeadingClick(object sender, MouseButtonEventArgs e)
     {
-        if (_renaming || Renamer is null)
+        if (_renaming || !CanRename)
         {
             return;
         }
 
         _renaming = true;
-        HeadingEditor.Text = Folder.Name;
+        HeadingEditor.Text = Folder!.Name;
         HeadingEditor.ToolTip = null;
         Heading.Visibility = Visibility.Hidden;
         EditGlyph.BeginAnimation(OpacityProperty, null);
@@ -450,13 +542,13 @@ internal partial class PopupPanel : Window
     private void CommitRename(bool keepOpenOnError)
     {
         var name = HeadingEditor.Text.Trim();
-        if (name == Folder.Name || Renamer is null)
+        if (Folder is not { } folder || name == folder.Name || Renamer is null)
         {
             EndRename();
             return;
         }
 
-        if (Renamer(Folder.Name, name) is { } problem)
+        if (Renamer(folder.Name, name) is { } problem)
         {
             if (keepOpenOnError)
             {
@@ -472,9 +564,25 @@ internal partial class PopupPanel : Window
         }
 
         // The folder is renamed on disk; follow it, so the rescan that comes with it still finds this panel's folder.
-        Folder = Folder with { Name = name, FullPath = Path.Combine(Path.GetDirectoryName(Folder.FullPath) ?? "", name) };
+        Folder = folder with { Name = name, FullPath = Path.Combine(Path.GetDirectoryName(folder.FullPath) ?? "", name) };
         Heading.Text = name;
         EndRename();
+    }
+
+    // ---- Going back to the list of all folders ----
+
+    private void OnBackEnter(object sender, MouseEventArgs e) => BackButton.Background = (Brush)Resources["HoverBrush"];
+
+    private void OnBackLeave(object sender, MouseEventArgs e) => BackButton.Background = Brushes.Transparent;
+
+    private void OnBackClick(object sender, MouseButtonEventArgs e)
+    {
+        // Not a click on the heading, which would start renaming.
+        e.Handled = true;
+        if (_list is { } list)
+        {
+            ShowList(list);
+        }
     }
 
     private void EndRename()
@@ -498,7 +606,8 @@ internal partial class PopupPanel : Window
 
     private void OnItemMove(object sender, MouseEventArgs e)
     {
-        if (e.LeftButton != MouseButtonState.Pressed || _pressed is not { } item)
+        // Folders in the list of all folders stay where they are.
+        if (e.LeftButton != MouseButtonState.Pressed || _pressed is not { IsFolder: false } item)
         {
             return;
         }
@@ -515,29 +624,35 @@ internal partial class PopupPanel : Window
     // Drops on this panel reorder; anywhere else the target (desktop, another widget, a folder) takes the file.
     private void DragItem(PanelItem item, FrameworkElement source)
     {
-        _dragIndex = _items.IndexOf(item);
-        _slot = _dragIndex;
+        var index = _items.IndexOf(item);
+        if (index < 0 || item.Item is not { } file || Folder is not { } folder)
+        {
+            return;
+        }
+
+        _dragIndex = index;
+        _slot = index;
         _dragging = true;
         _reordered = false;
         _landing = null;
         _pendingReorder = null;
+        _settlingItem = null;
 
         // The icon lifts off its slot (which stays, empty) and follows the cursor.
-        var origin = SlotCenter(_dragIndex);
+        var origin = SlotCenter(index);
         PInvoke.GetCursorPos(out var cursor);
         _grab = (origin.X - cursor.X, origin.Y - cursor.Y);
-        _ghost = new DragGhost(item.Icon);
+        _ghost = new DragGhost(item.Icon, origin);
         _ghost.Show();
-        _ghost.PlaceCenter(origin);
         _ghost.Lift();
-        if (ContainerAt(_dragIndex) is { } container)
+        if (ContainerAt(index) is { } container)
         {
             container.Opacity = 0;
         }
 
-        var data = new DataObject(DataFormats.FileDrop, new[] { item.Item.FullPath });
-        data.SetData(ItemFormat, item.Item.Name);
-        data.SetData(FolderFormat, Folder.Name);
+        var data = new DataObject(DataFormats.FileDrop, new[] { file.FullPath });
+        data.SetData(ItemFormat, file.Name);
+        data.SetData(FolderFormat, folder.Name);
 
         DragDrop.AddQueryContinueDragHandler(source, OnQueryContinueDrag);
         DragDropEffects effect;
@@ -551,16 +666,31 @@ internal partial class PopupPanel : Window
             _dragging = false;
         }
 
-        FinishDrag(effect);
+        FinishDrag(effect, file.Name);
     }
 
+    // Called on every mouse move of the drag, wherever the cursor is.
     private void OnQueryContinueDrag(object sender, QueryContinueDragEventArgs e)
     {
         PInvoke.GetCursorPos(out var cursor);
         _ghost?.PlaceCenter(new ScreenPoint((int)Math.Round(cursor.X + _grab.X), (int)Math.Round(cursor.Y + _grab.Y)));
+
+        // DragLeave can be missed (it arrives only if the window is the drop target at that moment), so watch the
+        // cursor too: once it is off the panel, the item has been taken out.
+        if (!_hiddenForDrag && _dragIndex >= 0 && !CursorOverWindow())
+        {
+            TakeOut();
+        }
     }
 
-    private void FinishDrag(DragDropEffects effect)
+    // The dragged item left the panel: the folder closes. The drag goes on inside this window, so it only disappears.
+    private void TakeOut()
+    {
+        _slot = -1;
+        HideForDrag();
+    }
+
+    private void FinishDrag(DragDropEffects effect, string itemName)
     {
         var ghost = _ghost;
         var index = _dragIndex;
@@ -576,11 +706,16 @@ internal partial class PopupPanel : Window
             // Taken elsewhere (or let go outside the closed folder): the icon shrinks into whatever it was dropped on.
             ghost?.Land(default, vanish: true);
         }
-        else
+        else if (ghost is not null)
         {
-            // Settled in this panel, or let go over nothing: the icon flies to its slot.
-            var settle = landing ?? SlotCenter(index);
-            ghost?.Land(settle, vanish: false, RestoreItems);
+            // Settled in this panel, or let go over nothing: the icon flies to its slot, which stays empty (even if
+            // the items are rebuilt in the meantime) until it is there.
+            _settlingItem = itemName;
+            ghost.Land(landing ?? SlotCenter(index), vanish: false, () =>
+            {
+                _settlingItem = null;
+                RestoreItems();
+            });
         }
 
         if (reorder is not null)
@@ -595,6 +730,14 @@ internal partial class PopupPanel : Window
         {
             Dismiss();
         }
+        else if (_deferred is { } widgets)
+        {
+            _deferred = null;
+            if (!Refresh(widgets))
+            {
+                Dismiss();
+            }
+        }
     }
 
     // ---- Sliding the items ----
@@ -608,7 +751,8 @@ internal partial class PopupPanel : Window
         return new ScreenPoint((int)Math.Round(point.X), (int)Math.Round(point.Y));
     }
 
-    private FrameworkElement? ContainerAt(int index) => Items.ItemContainerGenerator.ContainerFromIndex(index) as FrameworkElement;
+    private FrameworkElement? ContainerAt(int index) =>
+        index >= 0 ? Items.ItemContainerGenerator.ContainerFromIndex(index) as FrameworkElement : null;
 
     // The slot under a point of the item list, or null if it is outside the list.
     private int? SlotAt(Point point, int last)
@@ -685,9 +829,16 @@ internal partial class PopupPanel : Window
 
     private void OnItemClick(object sender, RoutedEventArgs e)
     {
-        if (((FrameworkElement)sender).DataContext is PanelItem item)
+        switch (((FrameworkElement)sender).DataContext)
         {
-            ItemInvoked?.Invoke(this, item.Item);
+            case PanelItem { Folder: { } folder }:
+                // Opens in place, the way its widget's panel would.
+                ShowFolder(folder);
+                break;
+
+            case PanelItem { Item: { } item }:
+                ItemInvoked?.Invoke(this, item);
+                break;
         }
     }
 }
