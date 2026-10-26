@@ -34,6 +34,15 @@ internal static class Backdrop
         return PInvoke.DwmSetWindowAttribute(window, DWMWINDOWATTRIBUTE.DWMWA_SYSTEMBACKDROP_TYPE, &backdrop, sizeof(int)).Succeeded;
     }
 
+    /// <summary>Removes the backdrop (Mica / acrylic) that a themed window got, leaving the window opaque.</summary>
+    public static unsafe void DisableBackdrop(HWND window)
+    {
+        var none = (int)DWM_SYSTEMBACKDROP_TYPE.DWMSBT_NONE;
+        var noMargins = new MARGINS();
+        PInvoke.DwmExtendFrameIntoClientArea(window, in noMargins);
+        PInvoke.DwmSetWindowAttribute(window, DWMWINDOWATTRIBUTE.DWMWA_SYSTEMBACKDROP_TYPE, &none, sizeof(int));
+    }
+
     /// <summary>
     /// Hides or shows the window without the Shell knowing, so it can be shown the instant its content and
     /// backdrop are ready instead of appearing half drawn.
