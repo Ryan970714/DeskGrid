@@ -123,9 +123,6 @@
   <data name="PanelRename" xml:space="preserve">
     <value>重新命名資料夾</value>
   </data>
-  <data name="PanelAllFolders" xml:space="preserve">
-    <value>DeskGrid 資料夾</value>
-  </data>
   <data name="PanelNoFolders" xml:space="preserve">
     <value>還沒有任何資料夾。</value>
   </data>

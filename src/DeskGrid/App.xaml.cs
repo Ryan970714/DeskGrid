@@ -260,8 +260,8 @@ public partial class App : Application
     {
         try
         {
-            ShellItem.Reveal(PinShortcut.CreateForAllFolders(Strings.PanelAllFolders));
-            MessageBox.Show(string.Format(Strings.PinCreated, Strings.PanelAllFolders), Strings.AppName, MessageBoxButton.OK, MessageBoxImage.Information);
+            ShellItem.Reveal(PinShortcut.CreateForAllFolders(Strings.AppName));
+            MessageBox.Show(string.Format(Strings.PinCreated, Strings.AppName), Strings.AppName, MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
         {

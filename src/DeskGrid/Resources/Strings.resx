@@ -128,9 +128,6 @@ Using the default root folder instead:
   <data name="PanelRename" xml:space="preserve">
     <value>Rename folder</value>
   </data>
-  <data name="PanelAllFolders" xml:space="preserve">
-    <value>DeskGrid folders</value>
-  </data>
   <data name="PanelNoFolders" xml:space="preserve">
     <value>There are no folders yet.</value>
   </data>
