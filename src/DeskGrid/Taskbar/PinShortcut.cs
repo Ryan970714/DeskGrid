@@ -49,6 +49,16 @@ internal static class PinShortcut
     {
         Directory.CreateDirectory(AllFoldersPath);
         var shortcutPath = Path.Combine(AllFoldersPath, displayName + ".lnk");
+
+        // Drop shortcuts left under an earlier name (up to 0.2.2 it had a localized name), so only this one is shown.
+        foreach (var stale in Directory.EnumerateFiles(AllFoldersPath, "*.lnk"))
+        {
+            if (!string.Equals(stale, shortcutPath, StringComparison.OrdinalIgnoreCase))
+            {
+                File.Delete(stale);
+            }
+        }
+
         var program = Environment.ProcessPath!;
         ShortcutFile.Create(shortcutPath, program, OpenRequest.AllFoldersArguments, program, AppIdPrefix + "All");
         return shortcutPath;

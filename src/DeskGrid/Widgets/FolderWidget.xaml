@@ -8,14 +8,14 @@
       <Border Width="48" Height="48" CornerRadius="10.7" Padding="5.8" Background="#4DFFFFFF">
         <Grid>
           <Image x:Name="Preview" RenderOptions.BitmapScalingMode="HighQuality" />
-          <TextBlock x:Name="Plus"
-                     Visibility="Collapsed"
-                     Text="+"
-                     Foreground="White"
-                     HorizontalAlignment="Center"
-                     VerticalAlignment="Center"
-                     FontFamily="Segoe UI Light"
-                     FontSize="34" />
+          <!-- Drawn, not a "+" glyph: a font's line metrics put the glyph off the tile's center. -->
+          <Path x:Name="Plus"
+                Visibility="Collapsed"
+                Data="M 11,0 V 22 M 0,11 H 22"
+                Stroke="White"
+                StrokeThickness="2"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center" />
         </Grid>
       </Border>
       <TextBlock x:Name="Label"
