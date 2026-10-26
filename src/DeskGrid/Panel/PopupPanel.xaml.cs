@@ -166,6 +166,8 @@ internal partial class PopupPanel : Window
             return true;
         }
 
+        // Newer than anything held back during a drag.
+        _deferred = null;
         if (_list is not null)
         {
             _list = widgets;
@@ -301,6 +303,8 @@ internal partial class PopupPanel : Window
         {
             var index = _gap >= 0 ? _gap : _items.Count;
             _gap = -1;
+            // Close the gap: if nothing could be added, no refresh rebuilds the items.
+            Slide(gapAt: null);
             _resize?.Stop();
             Items.MinHeight = 0; // the refresh that follows sizes the window for the new item
             ItemsDropped?.Invoke(this, new ItemsDroppedEventArgs(folder.Name, paths, index));
@@ -400,9 +404,18 @@ internal partial class PopupPanel : Window
     private void FitToContent()
     {
         _resize?.Stop();
+        var size = MeasureContent();
+        Width = size.Width;
+        Height = size.Height;
+    }
+
+    // New items only mark their own panel for measuring, not the elements above it, so a plain Measure of the frame
+    // would answer the size of the previous items; the pending layout has to run first.
+    private Size MeasureContent()
+    {
+        UpdateLayout();
         Frame.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        Width = Frame.DesiredSize.Width;
-        Height = Frame.DesiredSize.Height;
+        return Frame.DesiredSize;
     }
 
     // Makes room for one more item (a new row if the last one is full) while something is dragged over, or takes
@@ -412,9 +425,8 @@ internal partial class PopupPanel : Window
         var rows = (_items.Count + (incoming ? 1 : 0) + _columns - 1) / _columns;
         var currentRows = Math.Max(1, (_items.Count + _columns - 1) / _columns);
         Items.MinHeight = incoming && rows > currentRows ? rows * ItemHeight : 0;
-        Frame.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
         var from = Height;
-        var to = Frame.DesiredSize.Height;
+        var to = MeasureContent().Height;
         if (Math.Abs(from - to) < 0.5)
         {
             return;

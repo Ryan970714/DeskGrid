@@ -1,7 +1,10 @@
 using System.Windows.Media;
 using DeskGrid.Config;
 using DeskGrid.Desktop;
+using DeskGrid.Folders;
+using DeskGrid.Icons;
 using DeskGrid.Panel;
+using DeskGrid.Threading;
 
 namespace DeskGrid.Tests;
 
@@ -89,4 +92,36 @@ public sealed class PanelThemeTests
 
     private static PanelBackground Custom(string color, double opacity) =>
         new() { Style = PanelBackgroundStyle.Custom, CustomColor = color, CustomOpacity = opacity };
+}
+
+public sealed class PopupPanelTests : IDisposable
+{
+    private readonly DispatcherThread _ui = new("Test UI");
+
+    public void Dispose() => _ui.Dispose();
+
+    [Fact]
+    public async Task ShowFolder_AfterTheList_GrowsToTheFolderItems()
+    {
+        var (listHeight, folderHeight) = await _ui.InvokeAsync(() =>
+        {
+            using var icons = new IconService();
+            var theme = PanelTheme.Resolve(new PanelBackground { Style = PanelBackgroundStyle.Dark }, false, false);
+            var panel = new PopupPanel(new ScreenRect(0, 0, 1, 1), 3, theme, icons);
+            var big = Folder("Big", 17);
+            panel.ShowList([Folder("A", 1), Folder("B", 1), big]);
+            var listHeight = panel.Height;
+            panel.ShowFolder(big);
+            var folderHeight = panel.Height;
+            panel.Close();
+            return (listHeight, folderHeight);
+        });
+
+        // One row of folders, then the most rows a panel shows (4) of the 17 items.
+        Assert.Equal(3 * 96, folderHeight - listHeight, precision: 0);
+    }
+
+    private static WidgetFolder Folder(string name, int itemCount) =>
+        new(name, @"C:\DeskGrid.Tests\" + name,
+            [.. Enumerable.Range(1, itemCount).Select(i => new FolderItem($"Item {i}.txt", $@"C:\DeskGrid.Tests\{name}\Item {i}.txt", DateTime.UnixEpoch))]);
 }

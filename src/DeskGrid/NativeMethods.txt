@@ -12,8 +12,10 @@ DWMWINDOWATTRIBUTE
 DWM_SYSTEMBACKDROP_TYPE
 DWM_WINDOW_CORNER_PREFERENCE
 FindWindowEx
+GetClassName
 GetCursorPos
 GetDpiForMonitor
+GetForegroundWindow
 GetModuleHandle
 GetMonitorInfo
 GetObject

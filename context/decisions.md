@@ -336,3 +336,12 @@
 **Alternatives**: 依名稱排序（無法自訂）。
 **Consequences**: `WidgetCatalog.Widgets` 依此排序，連帶影響沒存位置的新 widget 的擺放順序。
 **Author**: 使用者決定（要求可拖曳排序），Claude 實作
+
+---
+
+### 2026-10-26 — 工作列按鈕再按一下收合：記下被工作列點擊關掉的面板
+**Decision**: 面板關閉時若前景視窗是工作列（`Shell_TrayWnd` / `Shell_SecondaryTrayWnd`），`PanelController` 記下該面板（列表為 `*`、否則資料夾名稱）與時間；3 秒內收到同一面板的工作列請求（`ToggleAtCursor` / `ToggleListAtCursor`）就當作「收合」，不再打開。
+**Reason**: 實測面板開著時再點工作列按鈕不會收合：按下時面板先失焦關閉，捷徑啟動的第二個 DeskGrid 程序隨後才把請求送來，此時已沒有開著的面板，於是又打開。
+**Alternatives**: 只比時間（點工作列其他按鈕後 3 秒內再點 DeskGrid 按鈕會被吃掉，範圍更大）；比游標位置（使用者點完常立刻移開滑鼠，不可靠）。
+**Consequences**: 先點工作列其他地方關掉面板、3 秒內再點同一個 DeskGrid 按鈕時需要多點一次。
+**Author**: Claude

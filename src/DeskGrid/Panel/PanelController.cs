@@ -13,7 +13,17 @@ internal sealed class PanelController(ConfigStore configStore, IconService icons
     private const int MinColumns = 1;
     private const int MaxColumns = 8;
 
+    // What a taskbar request asks for when it wants the list of all folders; no folder can have this name.
+    private const string ListKey = "*";
+
+    // From a click on a taskbar button to its request arriving: the shortcut has to start a DeskGrid process first.
+    private static readonly TimeSpan TaskbarRequestDelay = TimeSpan.FromSeconds(3);
+
     private PopupPanel? _panel;
+
+    // The panel that a click on the taskbar closed (by taking the activation from it), and when. The request that
+    // click sends comes a moment later and must not open the same panel again.
+    private (string Key, long Time)? _closedForTaskbar;
 
     /// <summary>Raised when the user dragged an item to another place in its panel.</summary>
     public event EventHandler<ItemReorderedEventArgs>? ItemReordered;
@@ -43,6 +53,11 @@ internal sealed class PanelController(ConfigStore configStore, IconService icons
     /// <summary>Opens the list of all folders at the cursor (asked for from the taskbar), or closes it if it is open.</summary>
     public void ToggleListAtCursor(IReadOnlyList<WidgetFolder> folders)
     {
+        if (ClosedByThisRequest(ListKey))
+        {
+            return;
+        }
+
         var wasOpen = _panel is { IsFolderList: true };
         _panel?.Dismiss();
         if (wasOpen)
@@ -80,7 +95,13 @@ internal sealed class PanelController(ConfigStore configStore, IconService icons
     }
 
     /// <summary>Like <see cref="Toggle"/>, for a panel asked for from outside the desktop (e.g. the taskbar): opens at the cursor.</summary>
-    public void ToggleAtCursor(WidgetFolder folder) => Toggle(folder, CursorRect());
+    public void ToggleAtCursor(WidgetFolder folder)
+    {
+        if (!ClosedByThisRequest(folder.Name))
+        {
+            Toggle(folder, CursorRect());
+        }
+    }
 
     /// <summary>Refreshes the open panel after a rescan, or closes it if its folder is gone.</summary>
     public void Refresh(IReadOnlyList<WidgetFolder> widgets)
@@ -131,6 +152,11 @@ internal sealed class PanelController(ConfigStore configStore, IconService icons
             {
                 _panel = null;
             }
+
+            if (TaskbarIsForeground())
+            {
+                _closedForTaskbar = (panel.IsFolderList ? ListKey : panel.Folder?.Name ?? "", Environment.TickCount64);
+            }
         };
 
         _panel = panel;
@@ -142,4 +168,22 @@ internal sealed class PanelController(ConfigStore configStore, IconService icons
     }
 
     private static bool Same(WidgetFolder a, WidgetFolder b) => string.Equals(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+
+    // Whether the panel a taskbar request asks for (by key) was closed by the very click that sent the request: the
+    // click meant "close", which has happened already.
+    private bool ClosedByThisRequest(string key)
+    {
+        var closed = _closedForTaskbar;
+        _closedForTaskbar = null;
+        return _panel is null && closed is { } c && string.Equals(c.Key, key, StringComparison.OrdinalIgnoreCase)
+            && Environment.TickCount64 - c.Time < TaskbarRequestDelay.TotalMilliseconds;
+    }
+
+    private static unsafe bool TaskbarIsForeground()
+    {
+        const int MaxLength = 64;
+        var name = stackalloc char[MaxLength];
+        var length = PInvoke.GetClassName(PInvoke.GetForegroundWindow(), name, MaxLength);
+        return new ReadOnlySpan<char>(name, length) is "Shell_TrayWnd" or "Shell_SecondaryTrayWnd";
+    }
 }
