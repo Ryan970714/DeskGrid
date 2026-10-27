@@ -707,7 +707,7 @@ internal partial class PopupPanel : Window
     private void OnQueryContinueDrag(object sender, QueryContinueDragEventArgs e)
     {
         PInvoke.GetCursorPos(out var cursor);
-        _ghost?.PlaceCenter(new ScreenPoint((int)Math.Round(cursor.X + _grab.X), (int)Math.Round(cursor.Y + _grab.Y)));
+        _ghost?.Follow(new ScreenPoint((int)Math.Round(cursor.X + _grab.X), (int)Math.Round(cursor.Y + _grab.Y)));
 
         // DragLeave can be missed (it arrives only if the window is the drop target at that moment), so watch the
         // cursor too: once it is off the panel, the item has been taken out.

@@ -345,3 +345,10 @@
 **Alternatives**: 只比時間（點工作列其他按鈕後 3 秒內再點 DeskGrid 按鈕會被吃掉，範圍更大）；比游標位置（使用者點完常立刻移開滑鼠，不可靠）。
 **Consequences**: 先點工作列其他地方關掉面板、3 秒內再點同一個 DeskGrid 按鈕時需要多點一次。
 **Author**: Claude
+
+### 2026-10-27 — 拖曳影子改為純 Win32 分層視窗（自己註冊視窗類別）
+**Decision**: `DragGhost` 不再是 WPF `Window` / `HwndSource`：以 `RegisterClassEx`（`DefWindowProc`）+ `CreateWindowEx` 建 `WS_EX_LAYERED` 視窗，圖示用 `RenderTargetBitmap` 畫進 DIB section，再 `UpdateLayeredWindow`；只在大小 / 透明度變動時重畫，移動只 `SetWindowPos`（每幀一次）。
+**Reason**: 透明 WPF 視窗每次移動要等 WPF 出一幀（15–25 ms），拖曳時其他項目的滑動動畫會卡。改用 `HwndSource` 時 WPF 仍會畫進該視窗，`UpdateLayeredWindow` 一律失敗（87），影子顯示成黑色方塊。
+**Alternatives**: 系統內建視窗類別（如 Static）免註冊，但意圖不明顯。
+**Consequences**: 新增 `DragGhostTests` 檢查繪製沒有失敗（換回 `HwndSource` 時會失敗）。
+**Author**: Claude

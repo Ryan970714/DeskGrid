@@ -1,6 +1,8 @@
+using System.IO;
 using System.Windows.Media;
 using DeskGrid.Config;
 using DeskGrid.Desktop;
+using DeskGrid.Diagnostics;
 using DeskGrid.Folders;
 using DeskGrid.Icons;
 using DeskGrid.Panel;
@@ -124,4 +126,33 @@ public sealed class PopupPanelTests : IDisposable
     private static WidgetFolder Folder(string name, int itemCount) =>
         new(name, @"C:\DeskGrid.Tests\" + name,
             [.. Enumerable.Range(1, itemCount).Select(i => new FolderItem($"Item {i}.txt", $@"C:\DeskGrid.Tests\{name}\Item {i}.txt", DateTime.UnixEpoch))]);
+}
+
+public sealed class DragGhostTests : IDisposable
+{
+    private readonly DispatcherThread _ui = new("Test UI");
+
+    public void Dispose() => _ui.Dispose();
+
+    [Fact]
+    public async Task ShowAndLand_DrawTheIcon()
+    {
+        var before = FailureCount();
+        var landed = new TaskCompletionSource();
+        await _ui.InvokeAsync(() =>
+        {
+            var icon = new DrawingImage(new GeometryDrawing(Brushes.SteelBlue, null, new RectangleGeometry(new(0, 0, 48, 48))));
+            var ghost = new DragGhost(icon, new ScreenPoint(200, 200));
+            ghost.Show();
+            ghost.Lift();
+            ghost.Land(new ScreenPoint(260, 260), vanish: false, landed.SetResult);
+        });
+        await landed.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+
+        // A window WPF also renders into refuses UpdateLayeredWindow, and the ghost shows as a black square.
+        Assert.Equal(before, FailureCount());
+    }
+
+    private static int FailureCount() =>
+        File.Exists(Log.FilePath) ? File.ReadLines(Log.FilePath).Count(line => line.Contains("Drawing the drag ghost failed")) : 0;
 }
