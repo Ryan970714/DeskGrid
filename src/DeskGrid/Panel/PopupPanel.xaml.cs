@@ -362,11 +362,6 @@ internal partial class PopupPanel : Window
         {
             landing.Opacity = 0;
         }
-
-        if (new WindowInteropHelper(this).Handle is not 0 and var window)
-        {
-            Reposition(new HWND(window));
-        }
     }
 
     private void ApplyTheme()
@@ -405,8 +400,25 @@ internal partial class PopupPanel : Window
     {
         _resize?.Stop();
         var size = MeasureContent();
-        Width = size.Width;
-        Height = size.Height;
+        Resize(size.Height, size.Width);
+    }
+
+    // Moves and sizes the window in one step before WPF takes the new size: grown in place first, a panel near the
+    // bottom of the screen would reach past it for a moment, and the part that was off screen stays unpainted (the
+    // last row's names cut off) after the panel moves back up.
+    private void Resize(double height, double? width = null)
+    {
+        if (new WindowInteropHelper(this).Handle is not 0 and var window)
+        {
+            Reposition(new HWND(window), new Size(width ?? Width, height));
+        }
+
+        if (width is { } w)
+        {
+            Width = w;
+        }
+
+        Height = height;
     }
 
     // New items only mark their own panel for measuring, not the elements above it, so a plain Measure of the frame
@@ -438,12 +450,8 @@ internal partial class PopupPanel : Window
         timer.Tick += (_, _) =>
         {
             var t = Math.Min(1, clock.Elapsed / ResizeTime);
-            Height = from + (to - from) * (1 - Math.Pow(1 - t, 3));
-            if (new WindowInteropHelper(this).Handle is not 0 and var window)
-            {
-                // Keeps the panel on the side of its widget it opened on.
-                Reposition(new HWND(window));
-            }
+            // Also keeps the panel on the side of its widget it opened on.
+            Resize(from + (to - from) * (1 - Math.Pow(1 - t, 3)));
 
             if (t >= 1)
             {
@@ -498,14 +506,16 @@ internal partial class PopupPanel : Window
         }, DispatcherPriority.ApplicationIdle);
     }
 
-    private void Reposition(HWND window)
+    // Moves the window to where it goes for its current size, or for (and to) a new size in DIPs.
+    private void Reposition(HWND window, Size? size = null)
     {
         var monitor = MonitorArea.At(new ScreenPoint((_anchor.Left + _anchor.Right) / 2, (_anchor.Top + _anchor.Bottom) / 2));
-        var position = PanelPlacement.Place(_anchor, monitor.ToPixels(Width), monitor.ToPixels(Height),
-            monitor.WorkArea, monitor.ToPixels(AnchorGap));
-        PInvoke.SetWindowPos(window, HWND.Null, position.X, position.Y, 0, 0,
-            SET_WINDOW_POS_FLAGS.SWP_NOSIZE | SET_WINDOW_POS_FLAGS.SWP_NOZORDER | SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE
-            | SET_WINDOW_POS_FLAGS.SWP_FRAMECHANGED);
+        var width = monitor.ToPixels(size?.Width ?? Width);
+        var height = monitor.ToPixels(size?.Height ?? Height);
+        var position = PanelPlacement.Place(_anchor, width, height, monitor.WorkArea, monitor.ToPixels(AnchorGap));
+        var flags = SET_WINDOW_POS_FLAGS.SWP_NOZORDER | SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE | SET_WINDOW_POS_FLAGS.SWP_FRAMECHANGED;
+        PInvoke.SetWindowPos(window, HWND.Null, position.X, position.Y, width, height,
+            size is null ? flags | SET_WINDOW_POS_FLAGS.SWP_NOSIZE : flags);
     }
 
     // ---- Renaming the folder ----

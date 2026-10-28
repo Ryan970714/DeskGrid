@@ -104,7 +104,7 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 - **外觀**（使用者選定）：開在 widget 旁（下 → 上 → 左 → 右，先放得下者，另一軸夾回工作區）；項目 48 DIP 圖示、76×96 DIP 格；上方顯示資料夾名稱；最多顯示 4 列，超過捲動（細捲軸）。
 - **背景可自訂**（config `panelBackground`）：`system`（預設，Win11 22H2+ 系統 Acrylic + 系統深淺色；其他版本為不透明系統色）、`dark`、`light`（半透明）、`custom`（`customColor` #RRGGBB + `customOpacity` 0–1，字色依背景亮度自動黑/白）。設定介面在階段 6；目前手改 config 後重啟 app 生效。
 - **Acrylic 做法**（實測）：無邊框 `WS_POPUP` 視窗 DWM **不畫** system backdrop，必須保留框架：`SingleBorderWindow` + `WindowChrome(GlassFrameThickness=-1, CaptionHeight=0)` + 拿掉 `WS_SYSMENU`（否則 DWM 在延伸框架畫關閉鈕）+ composition 背景透明 + `DWMWA_SYSTEMBACKDROP_TYPE=TRANSIENTWINDOW`、`DWMWA_WINDOW_CORNER_PREFERENCE=ROUND`。**不可用 `SizeToContent`**（WPF 會多加已被 WindowChrome 移除的外框尺寸）→ 自己 Measure 內容後設 Width/Height。非 Acrylic 樣式用 layered 視窗（`AllowsTransparency`）自己畫圓角底色。
-- **定位**：在 `SourceInitialized`（第一次顯示前）用實體像素 `SetWindowPos`，不會閃到別處；內容變動（即時刷新）後重新定位。
+- **定位**：在 `SourceInitialized`（第一次顯示前）用實體像素 `SetWindowPos`，不會閃到別處；內容變動（即時刷新）後重新定位。改大小一律先 `SetWindowPos` 新位置 + 新大小、再設 WPF 尺寸（`Resize`）：先長再移的話，貼螢幕底部時超出螢幕那段不會重畫，最後一列名稱被切掉。
 - **收合**：Esc、失去啟用（點外部）、點項目啟動後、再點同一個 widget；點另一個 widget 直接切換。同時只有一個面板。資料夾內容變動時面板即時更新，資料夾消失則關閉。
 - **啟動**：`Process.Start(UseShellExecute=true)`（即 ShellExecuteEx），工作目錄 = 項目所在資料夾（捷徑自己的工作目錄優先），`ErrorDialog=true` 讓 Windows 顯示自己的錯誤（例如捷徑目標不存在）；UAC 取消等例外只記 log。
 - **名稱**：項目名稱用 Shell 顯示名稱（`SIGDN_NORMALDISPLAY`，與檔案總管一致，`.lnk`/`.url` 不顯示副檔名、其他依使用者「隱藏副檔名」設定）。
