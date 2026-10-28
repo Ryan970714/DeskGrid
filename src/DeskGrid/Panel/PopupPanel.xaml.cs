@@ -53,6 +53,7 @@ internal partial class PopupPanel : Window
     private bool _reordered;
     private bool _renaming;
     private DispatcherTimer? _resize;
+    private ScreenCapture? _capture;
 
     // All folders, if this panel was opened as their list; null for the panel of a single folder.
     private IReadOnlyList<WidgetFolder>? _list;
@@ -91,11 +92,26 @@ internal partial class PopupPanel : Window
 
         SourceInitialized += OnSourceInitialized;
         Closing += (_, _) => _closing = true;
+        Closed += (_, _) => _capture?.Dispose();
         // While an item is being dragged the drop target (the desktop, another app) takes activation.
         Deactivated += (_, _) =>
         {
             if (_dragging)
             {
+                return;
+            }
+
+            if (ScreenCapture.HasForeground())
+            {
+                // Stay for the screenshot; close once the capture is over, unless it handed activation back.
+                _capture?.Dispose();
+                _capture = ScreenCapture.WaitUntilDone(foreground =>
+                {
+                    if (foreground != new HWND(new WindowInteropHelper(this).Handle))
+                    {
+                        Dismiss();
+                    }
+                });
                 return;
             }
 

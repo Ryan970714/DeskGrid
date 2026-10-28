@@ -366,3 +366,10 @@
 **Alternatives**: 移位後強制整窗重繪（治標，仍可能閃一下）。
 **Consequences**: `Reposition(window, size)` 可同時設大小；`ShowItems` 結尾的單獨 `Reposition` 移除（`FitToContent` 已處理）。
 **Author**: Claude
+
+### 2026-10-28 — 截圖工具拿走前景時面板不收合
+**Decision**: 面板失去啟用時，若前景視窗屬於 Windows 截圖工具（`SnippingTool`，Win10 的 `ScreenClippingHost`）就不收合；以 `EVENT_SYSTEM_FOREGROUND`（out-of-context）等前景離開截圖工具：回到面板 → 照常；到其他視窗 → 收合。
+**Reason**: 使用者截圖回報問題時面板會先消失。實測 Win+Shift+S 覆蓋層是 `SnippingTool.exe` 的 `XamlWindow`，取得前景。
+**Alternatives**: 改用滑鼠 hook 判斷「點外部」而不靠失焦（改動大，鍵盤切換等情況也要另外處理）；截圖結束後強制把面板拉回前景（跨行程搶前景不可靠）。
+**Consequences**: 只認行程名稱，第三方截圖工具（ShareX、Snipaste 等）仍會讓面板收合。
+**Author**: Claude
