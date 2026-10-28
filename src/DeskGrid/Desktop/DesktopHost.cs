@@ -16,10 +16,18 @@ internal sealed class DesktopHost : IDisposable
 {
     private readonly List<DesktopSurface> _surfaces = [];
     private readonly DispatcherTimer _retryTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+    private readonly DesktopIconWatcher _iconWatcher = new();
     private HwndSource? _shellEventsWindow;
     private IconLayer? _layer;
 
     public DesktopHost() => _retryTimer.Tick += (_, _) => EnsureAttached();
+
+    /// <summary>Desktop icons were added, removed or moved.</summary>
+    public event EventHandler? IconsChanged
+    {
+        add => _iconWatcher.Changed += value;
+        remove => _iconWatcher.Changed -= value;
+    }
 
     /// <summary>Starts managing <paramref name="surface"/>; attaches it right away once started.</summary>
     public void Add(DesktopSurface surface)
@@ -59,6 +67,15 @@ internal sealed class DesktopHost : IDisposable
         return grid;
     }
 
+    /// <summary>Moves a desktop icon to the cell whose top-left corner is <paramref name="cell"/>.</summary>
+    public void MoveIcon(DesktopIcon icon, ScreenPoint cell)
+    {
+        var moved = _layer is { } layer && PInvoke.IsWindow(layer.Handle) && DesktopIconGrid.Move(layer, icon, cell);
+        Log.Info(moved
+            ? $"Moved desktop icon {icon.Index} off a widget, from ({icon.Cell.Left}, {icon.Cell.Top}) to ({cell.X}, {cell.Y})."
+            : $"Could not move desktop icon {icon.Index} off a widget.");
+    }
+
     public void Start()
     {
         _shellEventsWindow = ShellMessageWindow.Create("DeskGrid.ShellEvents", ShellEventsHook);
@@ -68,6 +85,7 @@ internal sealed class DesktopHost : IDisposable
     public void Dispose()
     {
         _retryTimer.Stop();
+        _iconWatcher.Dispose();
         foreach (var surface in _surfaces)
         {
             surface.Lost -= OnSurfaceLost;
@@ -93,6 +111,7 @@ internal sealed class DesktopHost : IDisposable
 
         _retryTimer.Stop();
         _layer = layer;
+        _iconWatcher.Watch(layer.FindListView());
         var attached = _surfaces.Where(s => !s.IsAttachedTo(layer.Handle)).ToList().Count(s => TryAttach(s, layer));
         if (attached > 0)
         {

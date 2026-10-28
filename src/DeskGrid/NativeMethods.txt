@@ -83,3 +83,5 @@ CreateWindowEx
 DefWindowProc
 DestroyWindow
 RegisterClassEx
+SetWinEventHook
+UnhookWinEvent

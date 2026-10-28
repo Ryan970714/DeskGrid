@@ -59,7 +59,7 @@ DesktopHost（`Desktop/`）、ConfigStore（`Config/`）、FolderScanner + Widge
 
 ## Known Issues
 - 舊版桌面階層（Win10 / Win11 ≤ 23H2）程式路徑尚未實機測試。
-- widget 會蓋住其下方的桌面圖示；圖示自動排列可能排到 widget 底下。
+- 落到 widget 上的桌面圖示會被移到最近的空格（開「自動排列圖示」時改由 widget 讓開）；DeskGrid 沒在執行時放上去的圖示，啟動時由 widget 避開而不是移圖示。
 - 關閉「顯示桌面圖示」時 widget 仍會顯示，尚未決定是否要跟著隱藏。
 - 跨行程掛子視窗會連結 input queue：Explorer 卡住時我們的 UI 執行緒可能一起卡住。`0x052C` 最多阻塞 1 秒。
 - 位置/大小以系統 DPI 計算；執行中改 DPI、多螢幕尚未處理（MVP 範圍外）。
@@ -68,9 +68,7 @@ DesktopHost（`Desktop/`）、ConfigStore（`Config/`）、FolderScanner + Widge
 - 執行中刪除根目錄本身：watcher 停止，不會自動恢復（重啟 app 會重建）。
 - 捷徑目標程式更新圖示但 .lnk 本身沒變時，快取的舊圖示要到重啟 app 才更新。
 - 圖示快取只在記憶體，每次啟動重新向 Shell 取（每個項目一次）。
-- 只有小尺寸圖示的程式在 256px 時由 Shell 放大，可能偏糊（本機樣本都有 256px 圖示）。
-- widget 不會避開原生桌面圖示（右側若有原生圖示會疊在一起），需使用者自己拖開。
-- 執行中改解析度、DPI、工作列位置時 widget 不會重新吸附，重啟 app 才夾回工作區。
+- 只有小尺寸圖示的程式在 256px 時由 Shell 放大，可能偏糊（本機樣本都有 256px 圖示）。- 執行中改解析度、DPI、工作列位置時 widget 不會重新吸附，重啟 app 才夾回工作區。
 - 多螢幕：格子大小依各螢幕 DPI 算，但 widget 實際以 Progman 的 DPI 渲染，不同 DPI 的副螢幕上可能錯位。
 - 拖曳中無法用 Esc 取消；放到已佔用的格子會被放到次近的空格。
 - 面板開著時拖曳另一個 widget，面板不會自動關閉。

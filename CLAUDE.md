@@ -89,7 +89,9 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 
 - **外觀**（使用者選定）：48 DIP 淺色半透明圓角方塊（白 30%、圓角 22.37%）內放預覽，下方名稱用系統圖示字型、白字陰影、最多 2 行；滑鼠移上時整格淡白高亮（像原生圖示）。
 - **格子**：一格 = 桌面原生圖示格（`DesktopIconGrid` 對 Explorer 的 `SysListView32` 送 `LVM_GETITEMSPACING` / `LVM_GETITEMPOSITION`，位置要跨行程讀取，所以用 `VirtualAllocEx` + `ReadProcessMemory`）；widget 一格就是一個原生圖示格大小（不取整數倍，否則高 DPI 下 76×96 DIP 會比 150×182 px 的圖示格大一點而變兩倍大）。格線以第一個原生圖示的格為錨點，所以與桌面圖示對齊；每欄由上往下填、從右往左。讀不到時退回舊行為（工作區右上角起算、76×96 DIP）。每個 widget 都在格子上，且一格一個。
-- **避開原生圖示**：與原生圖示格重疊超過 1/4 的格不使用（`WidgetGrid` 的 obstacles），除非已無其他格。只在擺放 / 放開拖曳時檢查；之後使用者把圖示拖到 widget 上無法阻止。
+- **避開原生圖示**：與原生圖示格重疊超過 1/4 的格不使用（`WidgetGrid` 的 obstacles / `Covers`），除非已無其他格。擺放 / 放開拖曳 widget 時由 widget 避開。
+- **圖示讓開**（使用者選定，2026-10-28）：之後若有原生圖示落到 widget 格上（Explorer 把新捷徑放進它以為的空格、使用者把圖示拖過去），`WidgetBoard.ClearIconsOffWidgets` 把該圖示移到最近的空格（`LVM_SETITEMPOSITION`，座標放在 lParam，不必寫入 Explorer 記憶體）。桌面開了「自動排列圖示」（list view 有 `LVS_AUTOARRANGE`）時圖示移不動，改由 widget 讓開。
+- **偵測圖示變動**（`DesktopIconWatcher`）：`SetWinEventHook` 只掛桌面那條 Explorer 執行緒（與工作列不同），out-of-context、不輪詢。list view 的 `EVENT_OBJECT_CREATE/DESTROY/REORDER` = 新增 / 刪除；**移動圖示時 list view 不發任何事件**（實測，含 `LVM_SETITEMPOSITION`），改用該執行緒的 `EVENT_SYSTEM_CAPTUREEND`（每次桌面拖曳結束都有）。300 ms debounce 後重讀格子。游標停在 widget 上放開 = widget 的拖放（加進資料夾），不會變成重疊。
 - **擺放**：有存位置 → 吸到最近的空格；沒存過 → 主螢幕第一個空格（先處理有存位置的，新 widget 才不會佔掉它們的格）。結果寫回 config（沒變就不寫）。
 - **拖曳**：`FolderWidget` 只把滑鼠轉成 Clicked / DragStarted / Dragged(游標位移, 實體像素) / DragCompleted，超過系統 `SM_CXDRAG` 才算拖。拖曳中自由跟隨游標；放開後吸到最近空格（目標格有人 → 次近空格）並存檔。
 - **生命週期**：`WidgetBoard.Show` 依資料夾名稱比對：消失的移除、新的建立、既有的更新名稱與預覽。資料夾改名 = 舊 widget 移除、新 widget 在轉移過來的位置建立。

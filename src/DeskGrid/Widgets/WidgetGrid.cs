@@ -51,20 +51,19 @@ internal sealed class WidgetGrid(
         return clear.Count > 0 ? clear : cells;
     }
 
-    private bool IsCovered(ScreenPoint cell)
+    /// <summary>Whether <paramref name="obstacle"/> covers enough of <paramref name="cell"/> to make it unusable.</summary>
+    public static bool Covers(ScreenRect obstacle, ScreenRect cell)
     {
         // Brushing a neighbour's edge doesn't count; sharing a quarter of the cell does.
-        foreach (var obstacle in obstacles ?? [])
-        {
-            var overlapWidth = Math.Min(cell.X + cellWidth, obstacle.Right) - Math.Max(cell.X, obstacle.Left);
-            var overlapHeight = Math.Min(cell.Y + cellHeight, obstacle.Bottom) - Math.Max(cell.Y, obstacle.Top);
-            if (overlapWidth * 4 > cellWidth && overlapHeight * 4 > cellHeight)
-            {
-                return true;
-            }
-        }
+        var overlapWidth = Math.Min(cell.Right, obstacle.Right) - Math.Max(cell.Left, obstacle.Left);
+        var overlapHeight = Math.Min(cell.Bottom, obstacle.Bottom) - Math.Max(cell.Top, obstacle.Top);
+        return overlapWidth * 4 > cell.Width && overlapHeight * 4 > cell.Height;
+    }
 
-        return false;
+    private bool IsCovered(ScreenPoint cell)
+    {
+        var rect = new ScreenRect(cell.X, cell.Y, cell.X + cellWidth, cell.Y + cellHeight);
+        return (obstacles ?? []).Any(obstacle => Covers(obstacle, rect));
     }
 
     private IEnumerable<ScreenPoint> Cells()

@@ -102,7 +102,7 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
     private WidgetGrid GridOn(MonitorArea monitor)
     {
         var (width, height) = CellSize(monitor);
-        return new WidgetGrid(monitor.WorkArea, width, height, _nativeIcons?.Anchor, _nativeIcons?.Icons);
+        return new WidgetGrid(monitor.WorkArea, width, height, _nativeIcons?.Anchor, _nativeIcons?.Icons.Select(i => i.Cell).ToList());
     }
 
     // Returns whether the saved position changed.
@@ -120,17 +120,78 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
         return SavePosition(folder.Name, position);
     }
 
+    /// <summary>
+    /// Desktop icons changed: an icon that ended up on a widget (a new shortcut Explorer put in the first
+    /// cell it thinks is free, or one the user dragged there) moves to the nearest free cell. When Explorer
+    /// arranges the icons itself they can't be moved, so the widgets make way instead.
+    /// </summary>
+    public void ClearIconsOffWidgets()
+    {
+        _nativeIcons = host.ReadIconGrid();
+        if (_nativeIcons is not { } grid)
+        {
+            return;
+        }
+
+        var placed = Placed().ToList();
+        var widgetCells = placed.Select(p => BoundsOf(p.Surface)).ToList();
+        var covering = grid.Icons.Where(i => widgetCells.Any(cell => WidgetGrid.Covers(i.Cell, cell))).ToList();
+        if (covering.Count == 0)
+        {
+            return;
+        }
+
+        if (grid.AutoArranged)
+        {
+            var configChanged = false;
+            foreach (var (surface, savePosition) in placed.Where(p => covering.Any(i => WidgetGrid.Covers(i.Cell, BoundsOf(p.Surface)))))
+            {
+                configChanged |= Place(surface, savePosition);
+            }
+
+            if (configChanged)
+            {
+                configStore.Save();
+            }
+
+            return;
+        }
+
+        // What a moved icon must stay off: the widgets and the icons staying where they are.
+        var occupied = widgetCells.Concat(grid.Icons.Except(covering).Select(i => i.Cell)).ToList();
+        foreach (var icon in covering)
+        {
+            var from = new ScreenPoint(icon.Cell.Left, icon.Cell.Top);
+            var to = new WidgetGrid(MonitorArea.At(from).WorkArea, grid.CellWidth, grid.CellHeight, grid.Anchor, occupied)
+                .NearestFree(from, taken: new HashSet<ScreenPoint>());
+            var target = new ScreenRect(to.X, to.Y, to.X + grid.CellWidth, to.Y + grid.CellHeight);
+            if (occupied.Any(o => WidgetGrid.Covers(o, target)))
+            {
+                continue; // The desktop is full.
+            }
+
+            host.MoveIcon(icon, to);
+            occupied.Add(target);
+        }
+    }
+
     // A widget was dragged and let go: snap it to the nearest free cell.
     private void Snap(DesktopSurface surface, Func<ScreenPoint, bool> savePosition)
     {
         _nativeIcons = host.ReadIconGrid();
-        var dropped = surface.Position;
-        var position = GridOn(MonitorArea.At(dropped)).NearestFree(dropped, TakenCells(except: surface));
-        surface.MoveTo(position);
-        if (savePosition(position))
+        if (Place(surface, savePosition))
         {
             configStore.Save();
         }
+    }
+
+    // Moves the widget to the free cell nearest to where it is. Returns whether its saved position changed.
+    private bool Place(DesktopSurface surface, Func<ScreenPoint, bool> savePosition)
+    {
+        var current = surface.Position;
+        var position = GridOn(MonitorArea.At(current)).NearestFree(current, TakenCells(except: surface));
+        surface.MoveTo(position);
+        return savePosition(position);
     }
 
     // The tile that creates a folder for whatever is dropped on it. Returns whether the saved position changed.
@@ -245,9 +306,9 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
         e.Effects = added > 0 ? DragDropEffects.Copy : DragDropEffects.None;
     }
 
-    private ScreenRect BoundsOf(Entry entry)
+    private ScreenRect BoundsOf(DesktopSurface surface)
     {
-        var position = entry.Surface.Position;
+        var position = surface.Position;
         var (width, height) = CellSize(MonitorArea.At(position));
         return new ScreenRect(position.X, position.Y, position.X + width, position.Y + height);
     }
@@ -261,8 +322,21 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
     }
 
     private HashSet<ScreenPoint> TakenCells(DesktopSurface? except) =>
-        _entries.Values.Select(e => e.Surface).Append(_addTile?.Surface)
-            .OfType<DesktopSurface>().Where(s => s != except).Select(s => s.Position).ToHashSet();
+        Placed().Select(p => p.Surface).Where(s => s != except).Select(s => s.Position).ToHashSet();
+
+    // Every widget and the "new folder" tile, with how to save each one's position.
+    private IEnumerable<(DesktopSurface Surface, Func<ScreenPoint, bool> SavePosition)> Placed()
+    {
+        foreach (var entry in _entries.Values)
+        {
+            yield return (entry.Surface, position => SavePosition(entry.Folder.Name, position));
+        }
+
+        if (_addTile is { } tile)
+        {
+            yield return (tile.Surface, SaveAddTilePosition);
+        }
+    }
 
     private ScreenPoint? SavedPosition(string name) =>
         configStore.Config.Widgets.TryGetValue(name, out var widget) ? widget.Position : null;
@@ -295,7 +369,7 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
             Surface = new DesktopSurface(View, position);
             _hover = new DispatcherTimer { Interval = HoverOpenDelay };
 
-            View.Clicked += (_, _) => board.WidgetClicked?.Invoke(board, new WidgetClickedEventArgs(Folder, board.BoundsOf(this)));
+            View.Clicked += (_, _) => board.WidgetClicked?.Invoke(board, new WidgetClickedEventArgs(Folder, board.BoundsOf(Surface)));
             View.PinRequested += (_, _) => board.PinRequested?.Invoke(board, Folder);
             View.DragStarted += (_, _) => _dragOrigin = Surface.Position;
             View.Dragged += (_, offset) => Surface.MoveTo(_dragOrigin.Offset(offset.X, offset.Y));
@@ -316,7 +390,7 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
             _hover.Tick += (_, _) =>
             {
                 _hover.Stop();
-                board.DragHovered?.Invoke(board, new WidgetClickedEventArgs(Folder, board.BoundsOf(this)));
+                board.DragHovered?.Invoke(board, new WidgetClickedEventArgs(Folder, board.BoundsOf(Surface)));
             };
             View.DragEnter += (_, e) =>
             {

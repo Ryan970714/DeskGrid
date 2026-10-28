@@ -352,3 +352,10 @@
 **Alternatives**: 系統內建視窗類別（如 Static）免註冊，但意圖不明顯。
 **Consequences**: 新增 `DragGhostTests` 檢查繪製沒有失敗（換回 `HwndSource` 時會失敗）。
 **Author**: Claude
+
+### 2026-10-28 — 桌面圖示落到 widget 上時由圖示讓開
+**Decision**: DeskGrid 執行中，原生桌面圖示若蓋到 widget 格（Explorer 放新捷徑、使用者拖動），把該圖示移到最近的空格（`LVM_SETITEMPOSITION`）；桌面「自動排列圖示」開啟時圖示移不動，改由 widget 讓開。偵測用 WinEvent（只掛桌面執行緒：list view 的新增 / 刪除事件 + `EVENT_SYSTEM_CAPTUREEND`），300 ms debounce，不輪詢。
+**Reason**: 使用者選定（widget 是使用者自己排好的位置，不該被新捷徑擠走）。實測 list view 移動項目不發 WinEvent，所以用拖曳結束時的 capture end 補上。
+**Alternatives**: widget 讓開（不動使用者的圖示，但 widget 會被擠走）；輪詢圖示位置（簡單但持續耗用跨行程呼叫）；`IFolderView::SelectAndPositionItems`（官方 API，需透過 IShellWindows 取桌面 view，程式量較大）。
+**Consequences**: 桌面上每次點擊 / 拖曳結束都會重讀一次圖示格（跨行程，每個圖示 4 次 SendMessage）。啟動時既有的重疊仍由 widget 避開（沿用原擺放規則）。被移動的圖示位置是否在 Explorer 重啟後保留未驗證。
+**Author**: Claude

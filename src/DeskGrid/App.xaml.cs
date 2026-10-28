@@ -63,6 +63,7 @@ public partial class App : Application
         _autoStart.UpdatePath();
 
         _desktopHost = new DesktopHost();
+        _desktopHost.IconsChanged += (_, _) => _board?.ClearIconsOffWidgets();
         _desktopHost.Start();
         _icons = new IconService();
         _panels = new PanelController(_configStore, _icons);

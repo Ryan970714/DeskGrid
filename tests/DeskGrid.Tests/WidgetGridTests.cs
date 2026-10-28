@@ -88,6 +88,18 @@ public sealed class WidgetGridTests
         Assert.Equal(new ScreenPoint(100, 0), grid.FirstFree(Taken()));
     }
 
+    [Theory]
+    [InlineData(0, 0, true)] // Same cell.
+    [InlineData(30, 60, true)] // Off the grid, still on most of the cell.
+    [InlineData(80, 0, false)] // Only a sliver of the width.
+    [InlineData(0, 160, false)] // Only a sliver of the height.
+    public void Covers_NeedsAQuarterOfTheCellBothWays(int dx, int dy, bool expected)
+    {
+        var cell = new ScreenRect(100, 200, 200, 400);
+
+        Assert.Equal(expected, WidgetGrid.Covers(new ScreenRect(100 + dx, 200 + dy, 200 + dx, 400 + dy), cell));
+    }
+
     private static HashSet<ScreenPoint> Taken(params (int X, int Y)[] cells) =>
         [.. cells.Select(c => new ScreenPoint(c.X, c.Y))];
 }

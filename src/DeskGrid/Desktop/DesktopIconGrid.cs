@@ -8,20 +8,29 @@ using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace DeskGrid.Desktop;
 
+/// <summary>One desktop icon.</summary>
+/// <param name="Index">The icon's item index in Explorer's list view.</param>
+/// <param name="Cell">The icon's cell, in physical screen pixels.</param>
+/// <param name="ViewPosition">The icon's position as the list view reports it, in its client coordinates.</param>
+internal sealed record DesktopIcon(int Index, ScreenRect Cell, Point ViewPosition);
+
 /// <summary>
 /// The desktop's own icon grid, read from Explorer's icon list view: the size of one icon cell and where
 /// the icons currently sit. Widgets use it to line up with the icons and to stay off them.
 /// </summary>
 /// <param name="Anchor">The top-left corner of one icon cell (all cells lie on the lattice through it).</param>
-/// <param name="Icons">The cell of every icon, in physical screen pixels.</param>
-internal sealed record DesktopIconGrid(int CellWidth, int CellHeight, ScreenPoint? Anchor, IReadOnlyList<ScreenRect> Icons)
+/// <param name="Icons">Every icon on the desktop.</param>
+/// <param name="AutoArranged">Explorer arranges the icons itself ("Auto arrange icons"), so they can't be moved.</param>
+internal sealed record DesktopIconGrid(int CellWidth, int CellHeight, ScreenPoint? Anchor, IReadOnlyList<DesktopIcon> Icons, bool AutoArranged)
 {
     // Messages of the list view (commctrl.h): LVM_FIRST = 0x1000.
     private const uint GetItemCount = 0x1004;
     private const uint GetItemRect = 0x100E;
+    private const uint SetItemPosition = 0x100F;
     private const uint GetItemPosition = 0x1010;
     private const int IconRectangle = 1; // LVIR_ICON
     private const uint GetItemSpacing = 0x1033;
+    private const int AutoArrangeStyle = 0x0100; // LVS_AUTOARRANGE
     private const int MaxIcons = 2000;
     private const uint Timeout = 500;
 
@@ -56,19 +65,29 @@ internal sealed record DesktopIconGrid(int CellWidth, int CellHeight, ScreenPoin
 
         // The list view reports where each icon image is; the cell is centered on it horizontally and starts at its top.
         var icons = positions
-            .Select(p =>
+            .Select((p, index) =>
             {
                 var left = origin.X + (p.Icon.left + p.Icon.right - cellWidth) / 2;
-                return new ScreenRect(left, origin.Y + p.Position.Y, left + cellWidth, origin.Y + p.Position.Y + cellHeight);
+                var cell = new ScreenRect(left, origin.Y + p.Position.Y, left + cellWidth, origin.Y + p.Position.Y + cellHeight);
+                return new DesktopIcon(index, cell, p.Position);
             })
             .ToList();
-        if (positions.Count > 0)
-        {
-            Log.Info($"Desktop icon 0: position {positions[0].Position}, icon rect {positions[0].Icon.left}..{positions[0].Icon.right}, list view origin {origin}.");
-        }
 
-        var anchor = icons.Count > 0 ? new ScreenPoint(icons[0].Left, icons[0].Top) : (ScreenPoint?)null;
-        return new DesktopIconGrid(cellWidth, cellHeight, anchor, icons);
+        var anchor = icons.Count > 0 ? new ScreenPoint(icons[0].Cell.Left, icons[0].Cell.Top) : (ScreenPoint?)null;
+        var autoArranged = (PInvoke.GetWindowLong(listView, WINDOW_LONG_PTR_INDEX.GWL_STYLE) & AutoArrangeStyle) != 0;
+        return new DesktopIconGrid(cellWidth, cellHeight, anchor, icons, autoArranged);
+    }
+
+    /// <summary>Moves <paramref name="icon"/> so its cell's top-left corner is at <paramref name="cell"/>.</summary>
+    public static bool Move(IconLayer layer, DesktopIcon icon, ScreenPoint cell)
+    {
+        var listView = layer.FindListView();
+        var x = icon.ViewPosition.X + cell.X - icon.Cell.Left;
+        var y = icon.ViewPosition.Y + cell.Y - icon.Cell.Top;
+
+        // The position travels in the message itself (MAKELPARAM), so nothing has to be written into Explorer.
+        var position = (nint)(uint)((ushort)x | ((ushort)y << 16));
+        return !listView.IsNull && TrySend(listView, SetItemPosition, (nuint)icon.Index, position, out _);
     }
 
     // LVM_GETITEMPOSITION and LVM_GETITEMRECT write into the caller's memory, which must be in Explorer's address space.
