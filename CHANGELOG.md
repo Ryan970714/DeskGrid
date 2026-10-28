@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.5
+
+### Added
+
+- A desktop icon that lands on a widget (Windows places a new shortcut in what it thinks is a free cell, or an icon is
+  dragged there) moves to the nearest free cell. With "Auto arrange icons" on, icons can't be moved, so the widget
+  moves instead.
+
+### Fixed
+
+- A panel opened near the bottom of the screen cut off the names in its last row when it grew, for example when a
+  folder with more items was opened from the folder list.
+- The taskbar shortcut to all folders couldn't be pinned while (or after) the shortcut from 0.2.2 and earlier was
+  pinned; it now has its own AppUserModelID.
+- Dragging an item in a panel is smoother: the drag ghost no longer waits for a WPF frame each time it moves.
+
 ## 0.2.4
 
 ### Changed
@@ -57,6 +73,18 @@
 - The title of the "all folders" panel is now "DeskGrid".
 
 ## 修正紀錄（繁體中文）
+
+### 0.2.5
+
+#### 新增
+
+- 桌面圖示落到 widget 上時（Windows 把新捷徑放進它以為的空格，或圖示被拖過去），自動移到最近的空格。開啟「自動排列圖示」時圖示移不動，改由 widget 讓開。
+
+#### 修正
+
+- 面板開在螢幕底部附近時，內容變多（例如從資料夾列表點進項目較多的資料夾）會切掉最後一列的名稱。
+- 0.2.2 以前的「所有資料夾」捷徑釘在工作列時（或取消後），新的捷徑無法釘選；現在改用自己的 AppUserModelID。
+- 面板內拖曳更順：拖曳影子移動時不再等 WPF 畫一幀。
 
 ### 0.2.4
 
