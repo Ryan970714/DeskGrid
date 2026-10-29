@@ -43,6 +43,9 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
     /// <summary>The user chose "Pin to taskbar" on a widget.</summary>
     public event EventHandler<WidgetFolder>? PinRequested;
 
+    /// <summary>The user chose "New folder" on a widget.</summary>
+    public event EventHandler? NewFolderRequested;
+
     /// <summary>The user chose "Delete folder" on a widget.</summary>
     public event EventHandler<WidgetFolder>? DeleteRequested;
 
@@ -122,9 +125,18 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
     private bool Add(WidgetFolder folder)
     {
         var taken = TakenCells(except: null);
-        var position = SavedPosition(folder.Name) is { } saved
-            ? GridOn(MonitorArea.At(saved)).NearestFree(saved, taken)
-            : GridOn(MonitorArea.Primary).FirstFree(taken);
+        ScreenPoint position;
+        if (SavedPosition(folder.Name) is { } saved)
+        {
+            // Without the desktop's icons to line up with (Explorer hasn't filled the desktop yet), snapping would move
+            // a widget onto the fallback grid and save that: it stays where it was put until the icons can be read.
+            var grid = GridOn(MonitorArea.At(saved));
+            position = grid.FollowsIcons ? grid.NearestFree(saved, taken) : saved;
+        }
+        else
+        {
+            position = GridOn(MonitorArea.Primary).FirstFree(taken);
+        }
 
         var entry = new Entry(this, folder, position);
         _entries[folder.Name] = entry;
@@ -352,6 +364,7 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
 
             View.Clicked += (_, _) => board.WidgetClicked?.Invoke(board, new WidgetClickedEventArgs(Folder, board.BoundsOf(Surface)));
             View.PinRequested += (_, _) => board.PinRequested?.Invoke(board, Folder);
+            View.NewFolderRequested += (_, _) => board.NewFolderRequested?.Invoke(board, EventArgs.Empty);
             View.DeleteRequested += (_, _) => board.DeleteRequested?.Invoke(board, Folder);
             View.DragStarted += (_, _) =>
             {

@@ -14,6 +14,8 @@ namespace DeskGrid.Desktop;
 /// </summary>
 internal sealed class DesktopHost : IDisposable
 {
+    private static readonly TimeSpan SettlePollInterval = TimeSpan.FromMilliseconds(500);
+
     private readonly List<DesktopSurface> _surfaces = [];
     private readonly DispatcherTimer _retryTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly DesktopIconWatcher _iconWatcher = new();
@@ -97,6 +99,19 @@ internal sealed class DesktopHost : IDisposable
         _shellEventsWindow = ShellMessageWindow.Create("DeskGrid.ShellEvents", ShellEventsHook);
         EnsureAttached();
     }
+
+    /// <summary>
+    /// Waits until the desktop's icons are in and have stopped moving (see <see cref="DesktopReadiness"/>), for a
+    /// start at sign-in. Returns <see langword="false"/> if they never did within <paramref name="timeout"/>.
+    /// </summary>
+    public static Task<bool> WaitUntilSettledAsync(TimeSpan timeout, CancellationToken cancel) =>
+        DesktopReadiness.WaitUntilSettledAsync(IconPlaces, SettlePollInterval, timeout, cancel);
+
+    // Where the icons are, as one string to compare; null while there are no icons to see.
+    private static string? IconPlaces() =>
+        IconLayer.Find() is { } layer && DesktopIconGrid.Read(layer) is { Icons.Count: > 0 } grid
+            ? string.Join(';', grid.Icons.Select(icon => $"{icon.Cell.Left},{icon.Cell.Top}"))
+            : null;
 
     public void Dispose()
     {

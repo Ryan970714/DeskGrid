@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -11,6 +12,7 @@ using DeskGrid.Desktop;
 using DeskGrid.Folders;
 using DeskGrid.Icons;
 using DeskGrid.Resources;
+using DeskGrid.Shell;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
@@ -52,6 +54,7 @@ internal partial class PopupPanel : Window
     private bool _dragging;
     private bool _reordered;
     private bool _renaming;
+    private bool _menuOpen;
     private DispatcherTimer? _resize;
     private ScreenCapture? _capture;
 
@@ -93,10 +96,11 @@ internal partial class PopupPanel : Window
         SourceInitialized += OnSourceInitialized;
         Closing += (_, _) => _closing = true;
         Closed += (_, _) => _capture?.Dispose();
-        // While an item is being dragged the drop target (the desktop, another app) takes activation.
+        // While an item is being dragged the drop target (the desktop, another app) takes activation; a command of
+        // its context menu (a confirmation, the properties) does too, and the panel must outlive the command.
         Deactivated += (_, _) =>
         {
-            if (_dragging)
+            if (_dragging || _menuOpen)
             {
                 return;
             }
@@ -133,6 +137,12 @@ internal partial class PopupPanel : Window
 
     /// <summary>An item of this panel was dragged and let go (wherever it landed).</summary>
     public event EventHandler? DragFinished;
+
+    /// <summary>"New folder" was chosen from the panel's menu; the panel has closed.</summary>
+    public event EventHandler? NewFolderRequested;
+
+    /// <summary>"Delete folder" was chosen from the panel's menu; the panel has closed.</summary>
+    public event EventHandler<WidgetFolder>? DeleteRequested;
 
     /// <summary>Renames the folder on disk: old name, new name; returns why not, or <see langword="null"/> on success.</summary>
     public Func<string, string, string?>? Renamer { get; set; }
@@ -614,6 +624,89 @@ internal partial class PopupPanel : Window
         Folder = folder with { Name = name, FullPath = Path.Combine(Path.GetDirectoryName(folder.FullPath) ?? "", name) };
         Heading.Text = name;
         EndRename();
+    }
+
+    // ---- Right-click ----
+
+    // A file gets the menu Explorer would show for it; a folder of the list gets DeskGrid's own.
+    private void OnItemRightClick(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+        if (_dragging || _renaming || ((FrameworkElement)sender).DataContext is not PanelItem item)
+        {
+            return;
+        }
+
+        if (item.Item is { } file)
+        {
+            ShowShellMenu(file.FullPath);
+        }
+        else if (item.Folder is { } folder)
+        {
+            ShowFolderMenu(folder);
+        }
+    }
+
+    // The name bar: DeskGrid's menu for the open folder. While the name is edited the box has its own menu.
+    private void OnHeadingRightClick(object sender, MouseButtonEventArgs e)
+    {
+        if (!_renaming)
+        {
+            e.Handled = true;
+            ShowFolderMenu(Folder);
+        }
+    }
+
+    private void ShowShellMenu(string path)
+    {
+        if (ShellContextMenu.Load(path) is not { } menu)
+        {
+            return;
+        }
+
+        PInvoke.GetCursorPos(out var cursor);
+        _menuOpen = true;
+        try
+        {
+            menu.Show(HwndSource.FromHwnd(new WindowInteropHelper(this).Handle), new ScreenPoint(cursor.X, cursor.Y));
+        }
+        finally
+        {
+            menu.Dispose();
+            _menuOpen = false;
+        }
+
+        // A command that opened something (the file, a dialog, the properties) has taken the focus: this panel is done.
+        if (!IsActive)
+        {
+            Dismiss();
+        }
+    }
+
+    // "New folder", and "Delete folder" where a folder is meant. The panel closes first: both ask something.
+    private void ShowFolderMenu(WidgetFolder? folder)
+    {
+        var create = new MenuItem { Header = Strings.TrayNewFolder };
+        create.Click += (_, _) =>
+        {
+            Dismiss();
+            NewFolderRequested?.Invoke(this, EventArgs.Empty);
+        };
+
+        var menu = new ContextMenu { PlacementTarget = this, Placement = PlacementMode.MousePoint, Items = { create } };
+        if (folder is not null)
+        {
+            var delete = new MenuItem { Header = Strings.WidgetDelete };
+            delete.Click += (_, _) =>
+            {
+                Dismiss();
+                DeleteRequested?.Invoke(this, folder);
+            };
+            menu.Items.Add(new Separator());
+            menu.Items.Add(delete);
+        }
+
+        menu.IsOpen = true;
     }
 
     // ---- Going back to the list of all folders ----

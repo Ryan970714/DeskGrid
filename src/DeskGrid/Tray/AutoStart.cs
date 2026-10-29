@@ -7,15 +7,25 @@ namespace DeskGrid.Tray;
 
 /// <summary>
 /// Starting at sign-in through the per-user Run key. Honors the switch in Task Manager's "Startup apps",
-/// which keeps the Run value but flags it as disabled under StartupApproved.
+/// which keeps the Run value but flags it as disabled under StartupApproved. The command carries
+/// <see cref="Switch"/>, so a start by Windows can tell itself from one by the user: at sign-in the desktop is still
+/// being put together, and DeskGrid waits for it before it places its widgets.
 /// </summary>
 internal sealed class AutoStart(RegistryKey root, string command)
 {
     public const string ValueName = "DeskGrid";
+    public const string Switch = "--autostart";
     private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string ApprovedKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
 
-    public static AutoStart ForCurrentUser() => new(Registry.CurrentUser, $"\"{Environment.ProcessPath}\"");
+    public static AutoStart ForCurrentUser() => new(Registry.CurrentUser, CommandFor(Environment.ProcessPath!));
+
+    /// <summary>What the Run key starts for the exe at <paramref name="exePath"/>.</summary>
+    public static string CommandFor(string exePath) => $"\"{exePath}\" {Switch}";
+
+    /// <summary>Whether <paramref name="args"/> are those of a start by Windows at sign-in.</summary>
+    public static bool WasStartedByWindows(IReadOnlyList<string> args) =>
+        args.Any(arg => string.Equals(arg, Switch, StringComparison.OrdinalIgnoreCase));
 
     public bool IsEnabled => RunValue is not null && !IsDisabledInTaskManager;
 

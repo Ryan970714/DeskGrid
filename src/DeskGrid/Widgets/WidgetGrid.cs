@@ -17,6 +17,9 @@ namespace DeskGrid.Widgets;
 internal sealed class WidgetGrid(
     ScreenRect workArea, int cellWidth, int cellHeight, ScreenPoint? anchor = null, IReadOnlyList<ScreenRect>? obstacles = null)
 {
+    /// <summary>Whether the cells follow the desktop's icon lattice (there was an <c>anchor</c>) instead of the work area's edges.</summary>
+    public bool FollowsIcons => anchor is not null;
+
     private int FirstColumnX => anchor is { } a
         ? workArea.Left + Mod(a.X - workArea.Left, cellWidth)
         : workArea.Right - Columns(workArea.Left) * cellWidth;

@@ -31,6 +31,12 @@ internal sealed class PanelController(ConfigStore configStore, IconService icons
     /// <summary>Raised when items from another place were dropped on the open panel.</summary>
     public event EventHandler<ItemsDroppedEventArgs>? ItemsDropped;
 
+    /// <summary>Raised when "New folder" was chosen from an open panel's menu.</summary>
+    public event EventHandler? NewFolderRequested;
+
+    /// <summary>Raised when "Delete folder" was chosen from an open panel's menu.</summary>
+    public event EventHandler<WidgetFolder>? DeleteRequested;
+
     /// <summary>Renames a widget folder (old name, new name); returns why not, or <see langword="null"/> on success.</summary>
     public Func<string, string, string?>? FolderRenamer { get; set; }
 
@@ -138,6 +144,8 @@ internal sealed class PanelController(ConfigStore configStore, IconService icons
         };
         panel.ItemReordered += (_, e) => ItemReordered?.Invoke(this, e);
         panel.ItemsDropped += (_, e) => ItemsDropped?.Invoke(this, e);
+        panel.NewFolderRequested += (_, _) => NewFolderRequested?.Invoke(this, EventArgs.Empty);
+        panel.DeleteRequested += (_, folder) => DeleteRequested?.Invoke(this, folder);
         panel.DragFinished += (_, _) =>
         {
             // The panel opened during the drag takes over now.

@@ -63,6 +63,13 @@ public sealed class WidgetGridTests
     }
 
     [Fact]
+    public void FollowsIcons_OnlyWithAnAnchor()
+    {
+        Assert.False(_grid.FollowsIcons);
+        Assert.True(new WidgetGrid(new ScreenRect(0, 0, 1000, 700), 100, 200, new ScreenPoint(307, 430)).FollowsIcons);
+    }
+
+    [Fact]
     public void Obstacles_AreSkipped()
     {
         // An icon sits on the top-right cell and half-covers the one below it.

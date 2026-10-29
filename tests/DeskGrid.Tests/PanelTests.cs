@@ -122,6 +122,52 @@ public sealed class PopupPanelTests : IDisposable
         Assert.Equal(3 * 96, folderHeight - listHeight, precision: 0);
     }
 
+    [Fact]
+    public async Task RightClickOnAnItem_ShowsTheShellMenu_UntilItIsClosed()
+    {
+        using var directory = new TempDirectory();
+        var file = directory.CreateFile("notes.txt");
+        var folder = new WidgetFolder("Notes", directory.Path, [new FolderItem("notes.txt", file, DateTime.UnixEpoch)]);
+
+        var shownFor = await _ui.InvokeAsync(() =>
+        {
+            using var icons = new IconService();
+            var theme = PanelTheme.Resolve(new PanelBackground { Style = PanelBackgroundStyle.Dark }, false, false);
+            var panel = new PopupPanel(new ScreenRect(200, 200, 201, 201), 3, theme, icons) { ShowActivated = false };
+            panel.ShowFolder(folder);
+            panel.Show();
+
+            // The menu loop pumps messages, so this timer runs while the menu is up and closes it, as Esc would.
+            var closer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+            closer.Tick += (_, _) => EndMenu();
+            closer.Start();
+            try
+            {
+                // The container is a ContentPresenter; the button the template makes is its only child.
+                var item = (System.Windows.Controls.Button)System.Windows.Media.VisualTreeHelper.GetChild(
+                    panel.Items.ItemContainerGenerator.ContainerFromIndex(0), 0);
+                var click = new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0, System.Windows.Input.MouseButton.Right)
+                {
+                    RoutedEvent = System.Windows.UIElement.PreviewMouseRightButtonUpEvent,
+                    Source = item,
+                };
+                var clock = System.Diagnostics.Stopwatch.StartNew();
+                item.RaiseEvent(click);
+                return clock.Elapsed;
+            }
+            finally
+            {
+                closer.Stop();
+                panel.Close();
+            }
+        });
+
+        Assert.True(shownFor >= TimeSpan.FromMilliseconds(90), $"The menu was up for only {shownFor.TotalMilliseconds} ms.");
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool EndMenu();
+
     private static WidgetFolder Folder(string name, int itemCount) =>
         new(name, @"C:\DeskGrid.Tests\" + name,
             [.. Enumerable.Range(1, itemCount).Select(i => new FolderItem($"Item {i}.txt", $@"C:\DeskGrid.Tests\{name}\Item {i}.txt", DateTime.UnixEpoch))]);

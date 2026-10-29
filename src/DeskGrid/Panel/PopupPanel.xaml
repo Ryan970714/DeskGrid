@@ -68,7 +68,8 @@
       <!-- The folder's name; hovering shows a pencil, clicking turns it into a box to rename the folder.
            A folder opened from the list of all folders has an arrow back to the list. -->
       <Grid x:Name="HeadingBar" Margin="0,0,0,8" Background="Transparent"
-            MouseEnter="OnHeadingEnter" MouseLeave="OnHeadingLeave" MouseLeftButtonUp="OnHeadingClick">
+            MouseEnter="OnHeadingEnter" MouseLeave="OnHeadingLeave" MouseLeftButtonUp="OnHeadingClick"
+            MouseRightButtonUp="OnHeadingRightClick">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="24" />
           <ColumnDefinition Width="*" />
@@ -131,7 +132,8 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate>
               <Button Style="{StaticResource ItemButton}" Click="OnItemClick" ToolTip="{Binding Name}"
-                      PreviewMouseLeftButtonDown="OnItemPress" PreviewMouseMove="OnItemMove" PreviewMouseLeftButtonUp="OnItemRelease">
+                      PreviewMouseLeftButtonDown="OnItemPress" PreviewMouseMove="OnItemMove" PreviewMouseLeftButtonUp="OnItemRelease"
+                      PreviewMouseRightButtonUp="OnItemRightClick">
                 <StackPanel>
                   <!-- A folder (in the list of all folders) sits on a tile, like its widget on the desktop. -->
                   <Border x:Name="Tile" Width="48" Height="48" CornerRadius="10.7">

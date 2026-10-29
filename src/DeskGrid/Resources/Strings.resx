@@ -236,4 +236,10 @@ Using the default root folder instead:
   <data name="SettingsDeleteItems" xml:space="preserve">
     <value>Are deleted along with it</value>
   </data>
+  <data name="AutoStartOffer" xml:space="preserve">
+    <value>Start DeskGrid automatically when you sign in to Windows?&#10;&#10;You can change this later in the tray menu ("Start with Windows").</value>
+  </data>
+  <data name="AutoStartFailed" xml:space="preserve">
+    <value>Windows did not allow changing the start-up entry. A policy on this PC may be blocking it.</value>
+  </data>
 </root>

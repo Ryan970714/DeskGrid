@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using DeskGrid.Diagnostics;
 using DeskGrid.Shell;
 
 namespace DeskGrid.Taskbar;
@@ -44,6 +45,25 @@ internal static class PinShortcut
         File.WriteAllBytes(iconPath, ToIcon(preview));
         ShortcutFile.Create(shortcutPath, Environment.ProcessPath!, OpenRequest.Arguments(folderName), iconPath, AppId(folderName));
         return shortcutPath;
+    }
+
+    /// <summary>
+    /// Deletes what <see cref="Create"/> wrote for <paramref name="folderName"/>, once the folder is gone. A button
+    /// the user already pinned is a copy of its own and stays.
+    /// </summary>
+    public static void Remove(string folderName)
+    {
+        foreach (var extension in new[] { ".lnk", ".ico" })
+        {
+            try
+            {
+                File.Delete(Path.Combine(FolderPath, folderName + extension));
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                Log.Error($"Removing the taskbar shortcut file of \"{folderName}\" failed", exception);
+            }
+        }
     }
 
     /// <summary>

@@ -24,6 +24,10 @@ public partial class App : Application
 
     private static readonly TimeSpan StartupUpdateCheckDelay = TimeSpan.FromSeconds(8);
 
+    // How long a start at sign-in waits for Explorer to lay out the desktop icons before going ahead without.
+    private static readonly TimeSpan DesktopSettleTimeout = TimeSpan.FromSeconds(45);
+
+    private readonly CancellationTokenSource _exiting = new();
     private Mutex? _singleInstance;
     private ConfigStore? _configStore;
     private AutoStart? _autoStart;
@@ -79,16 +83,19 @@ public partial class App : Application
             }
         };
         _panels.ItemsDropped += (_, e) => AddDroppedItems(e);
+        _panels.NewFolderRequested += (_, _) => CreateFolder();
+        _panels.DeleteRequested += (_, folder) => DeleteFolder(folder);
         _panels.FolderRenamer = RenameFolder;
         _tray = new TrayIcon(Strings.AppName, TrayMenu);
         _pendingOpen = OpenRequest.Parse(e.Args);
         _instanceChannel = new InstanceChannel(name => Dispatcher.BeginInvoke(() => OpenPanel(name)));
-        StartWidgets();
+        _ = StartWidgetsAsync(startedByWindows: AutoStart.WasStartedByWindows(e.Args));
         _ = CheckForUpdatesAtStartupAsync();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _exiting.Cancel();
         _settings?.Close();
         _instanceChannel?.Dispose();
         StopWidgets();
@@ -131,10 +138,68 @@ public partial class App : Application
         new(Strings.TrayPinAllFolders, PinAllFoldersToTaskbar),
         new(Strings.TraySettings, ShowSettings),
         TrayMenuItem.Separator,
-        new(Strings.TrayAutoStart, () => _autoStart!.SetEnabled(!_autoStart.IsEnabled), _autoStart!.IsEnabled),
+        new(Strings.TrayAutoStart, ToggleAutoStart, _autoStart!.IsEnabled),
         TrayMenuItem.Separator,
         new(Strings.MenuExit, Shutdown),
     ];
+
+    private void ToggleAutoStart() => ReportAutoStart(_autoStart!.SetEnabled(!_autoStart.IsEnabled));
+
+    private static void ReportAutoStart(bool changed)
+    {
+        if (!changed)
+        {
+            MessageBox.Show(Strings.AutoStartFailed, Strings.AppName, MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    // The first time, once the widgets are up: should DeskGrid start with Windows? Whatever the answer, not asked again.
+    private void OfferAutoStart()
+    {
+        var config = _configStore!.Config;
+        if (config.AutoStartAsked)
+        {
+            return;
+        }
+
+        config.AutoStartAsked = true;
+        _configStore.Save();
+        if (!_autoStart!.IsEnabled
+            && MessageBox.Show(Strings.AutoStartOffer, Strings.AppName, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+        {
+            ReportAutoStart(_autoStart.SetEnabled(true));
+        }
+    }
+
+    // At sign-in Explorer is still putting the desktop together: wait for its icons to settle before placing widgets
+    // on the same grid. A start by the user finds the desktop ready.
+    private async Task StartWidgetsAsync(bool startedByWindows)
+    {
+        if (startedByWindows)
+        {
+            try
+            {
+                var settled = await DesktopHost.WaitUntilSettledAsync(DesktopSettleTimeout, _exiting.Token);
+                Log.Info(settled ? "Started at sign-in; the desktop has settled." : "Started at sign-in; the desktop did not settle in time, going ahead.");
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+        }
+
+        // Nobody awaits this method: a failure here has to be logged, or it vanishes with the task.
+        try
+        {
+            StartWidgets();
+            _ = Dispatcher.BeginInvoke(OfferAutoStart, DispatcherPriority.ApplicationIdle);
+        }
+        catch (Exception exception)
+        {
+            Log.Error("Starting the widgets failed", exception);
+            throw;
+        }
+    }
 
     // The widgets of the current root folder; rebuilt when the root changes.
     private void StartWidgets()
@@ -144,6 +209,7 @@ public partial class App : Application
         board.DragHovered += (_, hover) => _panels!.OpenForDrag(hover.Folder, hover.Bounds);
         board.WidgetDragStarted += (_, _) => _panels!.Close(); // The panel would stay where the widget was.
         board.PinRequested += (_, folder) => _ = PinToTaskbarAsync(folder);
+        board.NewFolderRequested += (_, _) => CreateFolder();
         board.DeleteRequested += (_, folder) => DeleteFolder(folder);
 
         var catalog = new WidgetCatalog(_configStore!);
@@ -261,7 +327,10 @@ public partial class App : Application
         if (FolderDeleter.Delete(folder.FullPath, mode, desktop, RecycleBin.Send) is { } problem)
         {
             MessageBox.Show(problem, Strings.AppName, MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
         }
+
+        PinShortcut.Remove(folder.Name);
     }
 
     private async Task PinToTaskbarAsync(WidgetFolder folder)

@@ -41,7 +41,7 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 | 模組 | 資料夾 | 職責 |
 |---|---|---|
 | DesktopHost | `Desktop/` | 把 widget 視窗掛在桌面圖示層（所有一般視窗後方）；相容舊版與 Win11 24H2+ 桌面階層；Explorer 重啟後自動重新掛載 |
-| ConfigStore | `Config/` | `%APPDATA%\DeskGrid\config.json`，只存 widget 位置、面板欄數、項目排序、根目錄路徑、拖入模式，以及面板背景（2026-10-24 使用者同意新增）、刪除資料夾時項目的處理方式（`deleteMode`） |
+| ConfigStore | `Config/` | `%APPDATA%\DeskGrid\config.json`，只存 widget 位置、面板欄數、項目排序、根目錄路徑、拖入模式，以及面板背景（2026-10-24 使用者同意新增）、刪除資料夾時項目的處理方式（`deleteMode`）、是否問過開機自啟（`autoStartAsked`，2026-10-30） |
 | FolderScanner | `Folders/` | 根目錄預設 `%USERPROFILE%\DeskGrid\`，每個子資料夾 = 一個 widget；FileSystemWatcher 監聽 Created/Deleted/Renamed/Changed，300ms debounce；Renamed 要轉移 config 中的位置與排序；根目錄位於使用者桌面時拒絕並提示 |
 | IconService | `Icons/` | IShellItemImageFactory 取 256px 圖示；依排序取前 4 個合成 2×2 預覽；快取，資料夾變動才重建 |
 | FolderWidget | `Widgets/` | 桌面上的資料夾圖示 + 名稱，可拖動並存位置（`FolderWidget` 視圖、`WidgetBoard` 同步與擺放、`WidgetGrid` 格線） |
@@ -52,7 +52,7 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 | 疊圖示建資料夾 | `Widgets/IconMerger`、`Folders/DesktopFiles` | 桌面圖示拖到另一個圖示上 → 新資料夾（拖曳期間以一個透明接收區接手 Explorer 的放開） |
 | 工作列釘選 | `Taskbar/` | widget 右鍵「釘選到工作列」：建 `--open "資料夾"` 捷徑讓使用者自己釘；系統匣「把所有資料夾釘選到工作列」建 `--all` 捷徑（面板列出所有資料夾）；點下去由命名管線（`InstanceChannel`）通知執行中的 DeskGrid 在游標處開面板；捷徑各帶 AppUserModelID，工作列才不會合併 |
 | 版本檢查 | `Updates/` | 啟動後 8 秒與設定視窗的「檢查更新」按鈕：查 GitHub 最新 release，有新版本彈出「更新 / 維持 / 取消」；更新 = 下載 exe、驗 SHA256、由 PowerShell 小腳本在程式結束後換檔並重啟 |
-| （輔助）Shell | `Shell/` | Shell 互通：`ShellImage`（圖示）、`ShellItem`（ShellExecute 開啟、顯示名稱）、`ShortcutFile`（建 .lnk） |
+| （輔助）Shell | `Shell/` | Shell 互通：`ShellImage`（圖示）、`ShellItem`（ShellExecute 開啟、顯示名稱）、`ShortcutFile`（建 .lnk）、`ShellContextMenu`（Explorer 對檔案的右鍵選單）、`RecycleBin` |
 | （輔助）Log | `Diagnostics/` | 簡易 append-only log |
 | （輔助）DispatcherThread | `Threading/` | 獨立 STA 執行緒上的 WPF Dispatcher（Shell / WPF 影像用；測試也拿來當 UI 執行緒） |
 | （輔助）Strings | `Resources/` | `Strings.resx`（en，neutral）+ `Strings.zh-TW.resx`；build 時產生強型別 `DeskGrid.Resources.Strings` |
@@ -98,7 +98,7 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 - **拖曳**：`FolderWidget` 只把滑鼠轉成 Clicked / DragStarted / Dragged(游標位移, 實體像素) / DragCompleted，超過系統 `SM_CXDRAG` 才算拖。拖曳中自由跟隨游標；放開後吸到最近空格（目標格有人 → 次近空格）並存檔。
 - **生命週期**：`WidgetBoard.Show` 依資料夾名稱比對：消失的移除、新的建立、既有的更新名稱與預覽。資料夾改名 = 舊 widget 移除、新 widget 在轉移過來的位置建立。
 - **DesktopHost**：`Add` 在已有圖示層時立即掛上（快取上次找到的 DefView，`IsWindow` 檢查），`Remove` 銷毀視窗；建立子視窗失敗（`Win32Exception`）→ 進入重試。
-- **右鍵選單**：「釘選到工作列…」「刪除資料夾…」。
+- **右鍵選單**：「釘選到工作列…」「新增資料夾…」「刪除資料夾…」。
 - **不搶啟用**：`DesktopSurface` 對 `WM_MOUSEACTIVATE` 回 `MA_NOACTIVATE`。否則點 widget 會啟用 Explorer 桌面，而 Explorer 會吞掉這次啟用點擊（面板開著時 widget 收不到按下）。
 
 ## Panel 實作要點（階段 5）
@@ -118,6 +118,7 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 - **工作列按鈕再按一下 = 收合**：點工作列會先讓面板失焦關閉，之後同一次點擊的請求才從管線到達。關閉時若前景是 `Shell_TrayWnd`，`PanelController` 記下是哪個面板，3 秒內同一面板的工作列請求視為「收合」而不重開。
 - **拖曳動畫**（iOS 式）：`DragGhost` 是不接輸入的置頂分層視窗（純 Win32 視窗 + `UpdateLayeredWindow`，**不可用 `HwndSource`**：WPF 也會畫進去，ULW 失敗 → 黑色方塊），載著圖示跟游標（每次 `QueryContinueDrag` 更新位置、被新開的面板蓋住時重新置頂）；原格留空（容器 `Opacity=0`），其餘項目用 `TranslateTransform` 動畫滑到新格（`PopupPanel.Slide`）。拖離面板時缺口合起來；放下後影子飛到格子，被別處接走則縮小淡出。拖曳事件的 `DragLeave` 會從子元素冒上來，要以游標是否真的離開視窗判斷。
 - **拖到 widget 自動開面板**：`WidgetBoard` 的 widget 上拖曳停 550 ms（且該拖曳可放入）→ `DragHovered` → `PanelController.OpenForDrag`（不啟用）。原面板只 `HideForDrag`（DWM cloak），拖曳結束才關，因為 `DoDragDrop` 在它裡面跑。放進開著的面板：`ItemsDropped` → `ItemImporter.ImportTo` → `WidgetCatalog.PlaceNewItem`（先重掃才能指定位置）；放入前該面板先開缺口。
+- **面板內右鍵**（2026-10-30）：檔案項目 → `ShellContextMenu`（`IShellItem.BindToHandler(BHID_SFUIObject)` 取 `IContextMenu`，`QueryContextMenu` 填原生選單，`TrackPopupMenuEx` 顯示，`InvokeCommand` 帶 `CMINVOKECOMMANDINFOEX` 執行）。是**傳統**選單（Win11「顯示其他選項」那個），沒有 Win11 精簡選單的公開 API。不傳 `CMF_CANRENAME`（重新命名要 Explorer 的 view 才能編輯，這裡沒有），按住 Shift 才傳 `CMF_EXTENDEDVERBS`。「傳送到」「開啟方式」等子選單與自繪項目靠 `IContextMenu2/3` 的 `HandleMenuMsg(2)`，由 `HwndSource.AddHook` 轉送 `WM_INITMENUPOPUP` / `WM_DRAWITEM` / `WM_MEASUREITEM` / `WM_MENUCHAR`。選單與指令執行期間 `_menuOpen` 為 true，`Deactivated` 不收合（刪除確認、內容視窗會搶走啟用，面板要活到指令結束）；結束後若面板已不是前景就收合。`ShellContextMenu` 不 `ReleaseComObject` 選單物件（交給 finalizer），因為「內容」「開啟方式」可能在 `InvokeCommand` 返回後還在別的執行緒用它。資料夾格（所有資料夾列表）與名稱列右鍵 → 自己的 WPF 選單（新增資料夾… / 刪除資料夾…），按下後先收合面板再觸發事件（兩者都會問問題）。
 - **標題改名**：面板標題滑過顯示鉛筆（Segoe MDL2 `E70F`），點擊變輸入框；Enter / 失焦確認、Esc 取消。`App.RenameFolder` 驗證（`WidgetFolderName.Validate`）後 `Directory.Move`；只差大小寫時經暫存名稱（`Directory.Move` 拒絕同名）；成功後面板先把自己的 `Folder` 改成新名，免得緊接的重掃找不到而關閉。
 
 ## 拖放 / Tray / 設定 實作要點（階段 6）
@@ -126,7 +127,9 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 - **捷徑命名**：exe 用檔名（`notepad.exe` → `notepad.lnk`）、其他保留完整檔名（`report.pdf.lnk`）、資料夾用資料夾名；工作目錄 = 目標所在資料夾。
 - **拖放接線**：`FolderWidget` 只負責 `AllowDrop` 與拖曳中的高亮；`WidgetBoard` 處理 `DragOver`（游標顯示第一個可處理項目的效果：移動 / 複製 / 連結）與 `Drop`。檔案操作自己做完後對來源回報 **Copy，絕不回報 Move**，否則來源會以為要刪掉原檔。OLE 拖放可送達 Explorer 底下的跨行程子視窗（已用 OLE 拖曳實測）。
 - **系統匣**（`TrayIcon`）：`Shell_NotifyIcon` + `NOTIFYICON_VERSION_4`，左右鍵都開原生 Win32 選單（每次重建，勾選狀態即時）；選單動作在選單關閉後才執行（可能開模態視窗）；`TaskbarCreated` 時重新加入圖示。圖示用 `LoadIconMetric` 從 exe 的 `#32512`（`<ApplicationIcon>`）載入 → **manifest 必須宣告 Common Controls v6**。
-- **開機自啟**（`AutoStart`）：`HKCU\...\Run\DeskGrid = "exe 路徑"`；工作管理員「啟動應用程式」停用時會在 `StartupApproved\Run` 留旗標（第一個 byte 為奇數）→ 視為關閉；我們切換時會清掉該旗標。啟動時若 exe 被搬走就更新路徑。
+- **開機自啟**（`AutoStart`）：`HKCU\...\Run\DeskGrid = "exe 路徑" --autostart`；工作管理員「啟動應用程式」停用時會在 `StartupApproved\Run` 留旗標（第一個 byte 為奇數）→ 視為關閉；我們切換時會清掉該旗標。啟動時若 exe 被搬走或舊項目沒有 `--autostart` 就更新。
+  - **開機流程**（2026-10-30）：帶 `--autostart` 的啟動會先 `DesktopHost.WaitUntilSettledAsync`（`DesktopReadiness`，每 0.5 秒在背景執行緒讀桌面圖示位置，連兩次相同才算好；逾時 45 秒照常往下）再建 widget。使用者自己啟動時桌面一定好了，不等。原因：登入時 list view 已存在但圖示還沒排好，格線沒有錨點 → widget 被吸到退回用的格線並寫回 config，覆蓋真正的位置。`WidgetBoard.Add` 另有防線：讀不到圖示格線（`WidgetGrid.FollowsIcons` 為 false）時，有存位置的 widget 不吸附、不存檔。
+  - **第一次執行**：config `autoStartAsked` 為 false 時，widget 出現後問一次「要不要開機啟動」（已啟用的使用者靜默標記）；之後只能從系統匣選單切換。登錄寫入被拒（群組原則）時 `ReportAutoStart` 會跳警告。
 - **單一執行個體**：`Local\DeskGrid.SingleInstance` mutex，第二個直接結束。
 - **設定視窗**：根目錄（`OpenFolderDialog`）、欄數 1–8、桌面捷徑拖入模式、面板背景（自訂色用 comdlg32 `ChooseColor`）。非模態、確定 / 取消；**非模態視窗的 `IsCancel` 不會自動關窗**，要自己 `Close()`。根目錄變更 → 重建 catalog 與 widget；其他設定 → 存檔、關閉已開面板。
 - **Fluent 視窗**（設定、新增資料夾、更新）：`ThemeMode="System"`；卡片樣式 `Card` / `CardTitle` 在 `App.xaml`；`FluentWindow.UseOpaqueBackground` 關掉 Mica 改不透明底色，文字才能用 ClearType。
@@ -185,6 +188,7 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 | 6 | 拖放加入、TrayApp、開機自啟 | ✅ 2026-10-25 使用者驗證通過 |
 | 7 | GitHub Actions CI、self-contained 打包、README（含 SmartScreen 未簽章說明）、LICENSE (MIT) | ✅ 完成 2026-10-25，已推上 GitHub、CI 通過、v0.1.0 已發布，待使用者驗證 |
 | 8 | 刪除資料夾（右鍵 + 設定）、桌面圖示疊圖示建資料夾、修 bug | 完成 2026-10-29（建置 / 146 測試通過）；右鍵刪除與疊圖示拖曳因工具限制未能實機操作，待使用者驗證 |
+| 9 | 面板項目的 Windows 原生右鍵選單、面板 / widget 右鍵「新增 / 刪除資料夾」、開機自啟流程（`--autostart`、等桌面排好、第一次詢問）、README 的應用程式控制封鎖說明、修 bug | 完成 2026-10-30（建置 / 160 測試通過，已 push，未發版）；原生選單以真實 `IContextMenu` 做了整合測試（顯示、阻塞、關閉），但沒有實際點選指令（電腦使用權限不含 DeskGrid 視窗），待使用者驗證 |
 
 # 工作方式
 

@@ -44,9 +44,11 @@ internal partial class FolderWidget : UserControl
 
         var pin = new MenuItem { Header = Strings.WidgetPinToTaskbar };
         pin.Click += (_, _) => PinRequested?.Invoke(this, EventArgs.Empty);
+        var create = new MenuItem { Header = Strings.TrayNewFolder };
+        create.Click += (_, _) => NewFolderRequested?.Invoke(this, EventArgs.Empty);
         var delete = new MenuItem { Header = Strings.WidgetDelete };
         delete.Click += (_, _) => DeleteRequested?.Invoke(this, EventArgs.Empty);
-        ContextMenu = new ContextMenu { Items = { pin, delete } };
+        ContextMenu = new ContextMenu { Items = { pin, create, new Separator(), delete } };
     }
 
     public event EventHandler? Clicked;
@@ -59,6 +61,8 @@ internal partial class FolderWidget : UserControl
     public event EventHandler? DragCompleted;
 
     public event EventHandler? PinRequested;
+
+    public event EventHandler? NewFolderRequested;
 
     public event EventHandler? DeleteRequested;
 

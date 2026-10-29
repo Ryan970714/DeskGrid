@@ -14,7 +14,9 @@ Every folder is a real folder on disk, so whatever you change there shows up on 
   drag them out onto the desktop or into another folder
 - Folders line up with the desktop's own icon grid and remember where you put them; icons that land on a folder
   step aside
-- Right-click a folder to delete it (to the Recycle Bin) or pin it to the taskbar
+- Right-click a folder to make a new one, delete it (to the Recycle Bin) or pin it to the taskbar
+- Right-click an item in an open folder for the menu Explorer shows for it: Open, Send to, Cut, Copy, Delete,
+  Properties and whatever your apps add
 - Tray menu: new folder, open the root folder, pin all folders to the taskbar, settings, start with Windows, exit
 - Panel background: Windows 11 acrylic following the light/dark theme, dark, light, or your own color
 - Folder names stay readable over a light wallpaper
@@ -29,13 +31,30 @@ Windows 10 22H2 or Windows 11, 64-bit. No .NET install needed: the download is a
 
 1. Download `DeskGrid-<version>-win-x64.exe` from [Releases](../../releases).
 2. Put it wherever you like (e.g. `%LOCALAPPDATA%\Programs\DeskGrid\`) and run it.
-3. Optional: turn on **Start with Windows** in the tray menu.
+3. The first time, DeskGrid asks whether it should start when you sign in to Windows. You can change that any time
+   with **Start with Windows** in the tray menu. At sign-in DeskGrid waits for Explorer to lay out the desktop
+   icons before it places the folders, so they line up with the icons and keep their positions.
 
 ### "Windows protected your PC"
 
 The exe isn't code-signed (signing certificates cost money), so Microsoft Defender SmartScreen warns
 about it until enough people have run it. To start it anyway, click **More info** → **Run anyway**.
 If the file was blocked, right-click it → **Properties** → check **Unblock** → **OK**.
+
+### "An Application Control policy has blocked this file"
+
+On Windows 11 with **Smart App Control** on (or a work PC with an App Control policy), Windows doesn't offer
+"Run anyway" for a program that isn't signed and that nobody has vouched for yet. The exe isn't signed (see above), so
+a downloaded copy can be refused with "An Application Control policy has blocked this file", often with
+"dangerous extension from the internet". Nothing is wrong with the file. What helps, from least to most drastic:
+
+1. Right-click the exe → **Properties** → **Unblock** → **OK**, then run it again. This removes the "came from the
+   internet" mark; it is enough on some PCs.
+2. Build it yourself ([below](#build-from-source)). A program you built on your own PC carries no such mark.
+3. Turn Smart App Control off: **Settings** → **Privacy & security** → **Windows Security** → **App & browser
+   control** → **Smart App Control settings** → **Off**. Windows may not let you turn it back on without reinstalling,
+   so decide whether you want that.
+4. On a PC that your organization manages, ask whoever runs it to allow the exe.
 
 GitHub shows the SHA-256 of the exe on the release page, next to the file. To check that your download matches:
 
@@ -52,11 +71,12 @@ desktop folder**; the files inside are its items.
 
 | To | Do |
 |---|---|
-| Create a folder | Drag a desktop icon onto another one (see below), tray menu → **New folder…**, or create a subfolder in the root folder |
+| Create a folder | Drag a desktop icon onto another one (see below), tray menu → **New folder…**, right-click a folder (or the name bar of an open folder) → **New folder…**, or create a subfolder in the root folder |
 | Open a folder | Click it. Click an item to launch it. Esc, clicking elsewhere or clicking the folder again closes it |
 | Move a folder | Drag it; it snaps to the nearest free cell |
 | Rename | Click the folder's name in its panel, or rename the subfolder in Explorer |
-| Delete | Right-click the folder → **Delete folder…**. The folder goes to the Recycle Bin; what happens to the items inside is up to Settings |
+| Delete | Right-click the folder on the desktop, or the name bar of its open panel (or its entry in the all-folders list) → **Delete folder…**. The folder goes to the Recycle Bin; what happens to the items inside is up to Settings. There is no need to open the root folder |
+| Open, delete, copy… an item | Right-click it in an open panel for Explorer's own menu (hold Shift for the extra commands). Rename is left out: rename the file in Explorer |
 | Add items | Drag them onto the folder (see below), or put files into the subfolder |
 | Reorder items | Drag an item to another place in the open panel; the others slide out of the way |
 | Take items out | Drag an item out of the panel onto the desktop, or onto another folder (hold it over a folder for a moment to open it and drop inside) |
@@ -125,6 +145,8 @@ never touched.
 - Apps dragged from the Start menu (no file behind them) can't be added.
 - When DeskGrid runs as administrator, Windows blocks drops from Explorer.
 - The tray menu stays light in dark mode.
+- An item's right-click menu is the classic Windows menu (what Windows 11 shows under "Show more options"), not the
+  compact Windows 11 one.
 - Only tested on Windows 11; the Windows 10 desktop layout is handled but not yet verified.
 
 ## Build from source

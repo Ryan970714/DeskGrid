@@ -28,6 +28,9 @@ internal sealed class AppConfig
     /// <summary>The release the user chose to keep the current version over ("Keep"); not asked about again unless a newer one appears.</summary>
     public string? SkippedUpdateVersion { get; set; }
 
+    /// <summary>Whether the user was asked, once, if DeskGrid should start with Windows.</summary>
+    public bool AutoStartAsked { get; set; }
+
     /// <summary>Folder names in the order the list of all folders shows them.</summary>
     public List<string> FolderOrder { get; set; } = [];
 

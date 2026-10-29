@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Right-click an item in an open folder for the menu Explorer shows for it (Open, Send to, Cut, Copy, Delete,
+  Properties and whatever other apps add; hold Shift for the extra commands). Rename is not in it.
+- **New folder…** in the right-click menu of a folder and of the name bar of an open folder.
+- **Delete folder…** from the name bar of an open folder and from a folder's entry in the all-folders list, so a
+  folder can be deleted without going back to the desktop or the root folder.
+- The first run asks whether DeskGrid should start with Windows. If Windows refuses to change the start-up entry, the
+  tray menu now says so.
+
+### Changed
+
+- Start with Windows: the entry now carries `--autostart` (older entries are updated on the next start). A start at
+  sign-in waits, up to 45 seconds, until Explorer has laid out the desktop icons before the folders are placed.
+
+### Fixed
+
+- A start at sign-in, before Explorer had put the desktop icons in place, could snap the folders onto the fallback grid
+  and save those positions over the real ones. Without the icon grid, folders now stay where they were.
+- Deleting a folder left its taskbar shortcut and icon in `%APPDATA%\DeskGrid\Pins`.
+
+### Documentation
+
+- README: what to do when Windows says "An Application Control policy has blocked this file" (Smart App Control).
+
 ## 0.3.0
 
 ### Added

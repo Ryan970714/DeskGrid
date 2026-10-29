@@ -225,4 +225,10 @@
   <data name="SettingsDeleteItems" xml:space="preserve">
     <value>一併刪除</value>
   </data>
+  <data name="AutoStartOffer" xml:space="preserve">
+    <value>要在登入 Windows 時自動啟動 DeskGrid 嗎？&#10;&#10;之後可以在系統匣選單的「開機時啟動」更改。</value>
+  </data>
+  <data name="AutoStartFailed" xml:space="preserve">
+    <value>Windows 不允許變更開機啟動項目，這台電腦的原則可能擋住了它。</value>
+  </data>
 </root>

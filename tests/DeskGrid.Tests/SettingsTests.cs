@@ -104,6 +104,34 @@ public sealed class AutoStartTests : IDisposable
         Assert.Null(RunValue());
     }
 
+    [Fact]
+    public void CommandFor_QuotesTheExe_AndMarksAStartByWindows()
+    {
+        var command = AutoStart.CommandFor(@"C:\Program Files\DeskGrid\DeskGrid.exe");
+
+        Assert.Equal("\"C:\\Program Files\\DeskGrid\\DeskGrid.exe\" --autostart", command);
+        Assert.True(AutoStart.WasStartedByWindows([AutoStart.Switch]));
+    }
+
+    [Theory]
+    [InlineData]
+    [InlineData("--open", "DEV")]
+    [InlineData("--all")]
+    public void WasStartedByWindows_IsFalseForOtherLaunches(params string[] args) =>
+        Assert.False(AutoStart.WasStartedByWindows(args));
+
+    [Fact]
+    public void UpdatePath_AddsTheSwitchToAnEntryFromAnOlderVersion()
+    {
+        var older = new AutoStart(_root, "\"C:\\Apps\\DeskGrid.exe\"");
+        older.SetEnabled(true);
+        var current = new AutoStart(_root, AutoStart.CommandFor(@"C:\Apps\DeskGrid.exe"));
+
+        current.UpdatePath();
+
+        Assert.Equal("\"C:\\Apps\\DeskGrid.exe\" --autostart", RunValue());
+    }
+
     private string? RunValue()
     {
         using var run = _root.OpenSubKey(RunKey);
