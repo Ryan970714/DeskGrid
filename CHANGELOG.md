@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.3.0
+
+### Added
+
+- Folder names get a dark halo while the wallpaper behind them is light, so white names stay readable.
+- Delete a folder from the desktop: right-click it → **Delete folder…**. The folder goes to the Recycle Bin. A new
+  setting decides what happens to the items inside: they are moved to the desktop first (the default), or deleted
+  along with the folder.
+- Drag a desktop icon onto another one and the two become a new folder, which takes the place of the icon dropped
+  on. Folders on the desktop are left alone: dropping onto one still moves the file into it.
+
+### Removed
+
+- The "new folder" tile on the desktop. New folders come from the tray menu or from dropping one desktop icon on
+  another; dropping files on the tile to make a folder for them is gone with it.
+
+### Fixed
+
+- Dragging a folder on the desktop while its panel was open left the panel behind; it now closes.
+
 ## 0.2.5
 
 ### Added
