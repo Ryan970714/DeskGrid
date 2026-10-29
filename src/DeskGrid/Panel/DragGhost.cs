@@ -191,6 +191,9 @@ internal sealed unsafe class DragGhost
         });
     }
 
+    /// <summary>How many times <c>UpdateLayeredWindow</c> refused to take the drawn icon.</summary>
+    internal int FailedDraws { get; private set; }
+
     private HWND Handle => _window;
 
     private static string RegisterWindowClass()
@@ -254,6 +257,7 @@ internal sealed unsafe class DragGhost
         if (!PInvoke.UpdateLayeredWindow(Handle, HDC.Null, &position, &size, _memory, &source, default, &blend,
             UPDATE_LAYERED_WINDOW_FLAGS.ULW_ALPHA))
         {
+            FailedDraws++;
             Log.Error("Drawing the drag ghost failed", new Win32Exception());
         }
     }

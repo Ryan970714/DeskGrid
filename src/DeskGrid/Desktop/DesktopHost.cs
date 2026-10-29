@@ -29,6 +29,13 @@ internal sealed class DesktopHost : IDisposable
         remove => _iconWatcher.Changed -= value;
     }
 
+    /// <summary>A mouse button went down on the desktop, which may turn into a drag of its icons.</summary>
+    public event EventHandler? DesktopPressed
+    {
+        add => _iconWatcher.Pressed += value;
+        remove => _iconWatcher.Pressed -= value;
+    }
+
     /// <summary>Starts managing <paramref name="surface"/>; attaches it right away once started.</summary>
     public void Add(DesktopSurface surface)
     {
@@ -58,14 +65,23 @@ internal sealed class DesktopHost : IDisposable
     }
 
     /// <summary>The desktop's own icon grid, or <see langword="null"/> if it can't be read right now.</summary>
-    public DesktopIconGrid? ReadIconGrid()
+    /// <param name="log">Whether to write what was read to the log (not for the reads that every click on an icon makes).</param>
+    public DesktopIconGrid? ReadIconGrid(bool log = true)
     {
         var grid = _layer is { } layer && PInvoke.IsWindow(layer.Handle) ? DesktopIconGrid.Read(layer) : null;
-        Log.Info(grid is null
-            ? "Desktop icon grid unavailable; widgets use their own grid."
-            : $"Desktop icon grid: cell {grid.CellWidth}x{grid.CellHeight} px, {grid.Icons.Count} icon(s).");
+        if (log)
+        {
+            Log.Info(grid is null
+                ? "Desktop icon grid unavailable; widgets use their own grid."
+                : $"Desktop icon grid: cell {grid.CellWidth}x{grid.CellHeight} px, {grid.Icons.Count} icon(s).");
+        }
+
         return grid;
     }
+
+    /// <summary>The name shown under each of the first <paramref name="count"/> desktop icons, or <see langword="null"/> if they can't be read.</summary>
+    public string[]? ReadIconNames(int count) =>
+        _layer is { } layer && PInvoke.IsWindow(layer.Handle) ? DesktopIconGrid.ReadNames(layer, count) : null;
 
     /// <summary>Moves a desktop icon to the cell whose top-left corner is <paramref name="cell"/>.</summary>
     public void MoveIcon(DesktopIcon icon, ScreenPoint cell)

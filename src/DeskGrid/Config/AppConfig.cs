@@ -21,10 +21,9 @@ internal sealed class AppConfig
 
     public DropMode DropMode { get; set; } = DropMode.Move;
 
-    public PanelBackground PanelBackground { get; set; } = new();
+    public DeleteMode DeleteMode { get; set; } = DeleteMode.MoveToDesktop;
 
-    /// <summary>Top-left corner of the "new folder" tile in physical screen pixels; <see langword="null"/> until it is placed.</summary>
-    public ScreenPoint? AddTilePosition { get; set; }
+    public PanelBackground PanelBackground { get; set; } = new();
 
     /// <summary>The release the user chose to keep the current version over ("Keep"); not asked about again unless a newer one appears.</summary>
     public string? SkippedUpdateVersion { get; set; }
@@ -72,4 +71,14 @@ internal enum DropMode
 {
     Move,
     Copy,
+}
+
+/// <summary>What happens to the items inside a widget folder when the folder is deleted.</summary>
+internal enum DeleteMode
+{
+    /// <summary>The items are moved to the user's desktop first.</summary>
+    MoveToDesktop,
+
+    /// <summary>The items go with the folder.</summary>
+    DeleteItems,
 }

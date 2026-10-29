@@ -18,12 +18,18 @@ internal sealed record WidgetClickedEventArgs(WidgetFolder Folder, ScreenRect Bo
 /// Shows one <see cref="FolderWidget"/> per widget folder on the desktop and keeps them in step with
 /// the catalog. Every widget sits on its own <see cref="WidgetGrid"/> cell; positions are saved.
 /// Files dropped on a widget are added to its folder by <see cref="ItemImporter"/>;
-/// files dropped on the "new folder" tile go into a folder created for them.
+/// a desktop icon dropped on another one makes a new folder of the two (see <see cref="IconMerger"/>).
 /// </summary>
 internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, IconService icons) : IDisposable
 {
+    // Names get a dark halo over a light wallpaper. Two thresholds so a wallpaper near the middle doesn't flicker.
+    private const double HaloOnAbove = 0.55;
+    private const double HaloOffBelow = 0.45;
+    private static readonly TimeSpan HaloInterval = TimeSpan.FromSeconds(2);
+
     private readonly Dictionary<string, Entry> _entries = new(StringComparer.OrdinalIgnoreCase);
-    private AddTile? _addTile;
+    private DispatcherTimer? _haloTimer;
+    private IconMerger? _merger;
     private DesktopIconGrid? _nativeIcons;
 
     public event EventHandler<WidgetClickedEventArgs>? WidgetClicked;
@@ -31,11 +37,14 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
     /// <summary>Something being dragged stayed over a widget: its folder should open.</summary>
     public event EventHandler<WidgetClickedEventArgs>? DragHovered;
 
+    /// <summary>A widget started being dragged to another place.</summary>
+    public event EventHandler? WidgetDragStarted;
+
     /// <summary>The user chose "Pin to taskbar" on a widget.</summary>
     public event EventHandler<WidgetFolder>? PinRequested;
 
-    /// <summary>The "new folder" tile was clicked.</summary>
-    public event EventHandler? AddRequested;
+    /// <summary>The user chose "Delete folder" on a widget.</summary>
+    public event EventHandler<WidgetFolder>? DeleteRequested;
 
     public void Show(IReadOnlyList<WidgetFolder> folders)
     {
@@ -54,16 +63,9 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
             configChanged |= Add(folder);
         }
 
-        configChanged |= ShowAddTile();
-
         foreach (var entry in _entries.Values)
         {
             ApplyCellSize(entry.View, entry.Surface);
-        }
-
-        if (_addTile is { } tile)
-        {
-            ApplyCellSize(tile.View, tile.Surface);
         }
 
         foreach (var folder in folders)
@@ -75,22 +77,33 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
         {
             configStore.Save();
         }
+
+        if (_haloTimer is null)
+        {
+            _haloTimer = new DispatcherTimer { Interval = HaloInterval };
+            _haloTimer.Tick += (_, _) => UpdateHalos();
+            _haloTimer.Start();
+        }
+
+        if (_merger is null)
+        {
+            _merger = new IconMerger(host, e => DropEffect(NewFolderPath(), e));
+            _merger.MergeRequested += (_, merge) => MergeIcons(merge);
+        }
+
+        UpdateHalos();
     }
 
     public void Dispose()
     {
+        _haloTimer?.Stop();
+        _merger?.Dispose();
         foreach (var entry in _entries.Values)
         {
             entry.Release(host);
         }
 
         _entries.Clear();
-
-        if (_addTile is { } tile)
-        {
-            host.Remove(tile.Surface);
-            _addTile = null;
-        }
     }
 
     // Cells are exactly as big as the desktop's icon cells, so a widget looks and sits like a shortcut.
@@ -183,6 +196,23 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
         {
             configStore.Save();
         }
+
+        UpdateHalos();
+    }
+
+    // Looks at the wallpaper behind each name. Skipped where a window covers the widget (the screen would
+    // show the window, not the wallpaper); the next tick tries again.
+    private void UpdateHalos()
+    {
+        foreach (var view in _entries.Values.Select(e => e.View))
+        {
+            if (view.LabelBounds() is not { } bounds || ScreenSampler.DesktopBrightness(bounds) is not { } brightness)
+            {
+                continue;
+            }
+
+            view.HasHalo = view.HasHalo ? brightness > HaloOffBelow : brightness > HaloOnAbove;
+        }
     }
 
     // Moves the widget to the free cell nearest to where it is. Returns whether its saved position changed.
@@ -194,84 +224,46 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
         return savePosition(position);
     }
 
-    // The tile that creates a folder for whatever is dropped on it. Returns whether the saved position changed.
-    private bool ShowAddTile()
-    {
-        if (_addTile is not null)
-        {
-            return false;
-        }
-
-        var saved = configStore.Config.AddTilePosition;
-        var taken = TakenCells(except: null);
-        var position = saved is { } s
-            ? GridOn(MonitorArea.At(s)).NearestFree(s, taken)
-            : GridOn(MonitorArea.Primary).FirstFree(taken);
-
-        var view = new FolderWidget();
-        view.ShowAddTile(Strings.WidgetAddTile);
-        var surface = new DesktopSurface(view, position);
-        var dragOrigin = position;
-        view.Clicked += (_, _) => AddRequested?.Invoke(this, EventArgs.Empty);
-        view.DragStarted += (_, _) => dragOrigin = surface.Position;
-        view.Dragged += (_, offset) => surface.MoveTo(dragOrigin.Offset(offset.X, offset.Y));
-        view.DragCompleted += (_, _) => Snap(surface, SaveAddTilePosition);
-        view.DragOver += (_, e) =>
-        {
-            e.Effects = DropEffect(NewFolderPath(), e);
-            e.Handled = true;
-        };
-        view.Drop += (_, e) =>
-        {
-            DropOnAddTile(e);
-            e.Handled = true;
-        };
-
-        _addTile = new AddTile(view, surface);
-        host.Add(surface);
-        return SaveAddTilePosition(position);
-    }
-
-    private bool SaveAddTilePosition(ScreenPoint position)
-    {
-        if (configStore.Config.AddTilePosition == position)
-        {
-            return false;
-        }
-
-        configStore.Config.AddTilePosition = position;
-        return true;
-    }
-
-    // Where the folder for a drop on the tile would be created.
+    // Where the folder for merged icons would be created.
     private string NewFolderPath()
     {
         var root = configStore.Config.RootPath;
         return Path.Combine(root, WidgetFolderName.Suggest(root));
     }
 
-    private void DropOnAddTile(DragEventArgs e)
+    // Icons were dropped on another desktop icon: a new folder takes that icon's place and gets both.
+    private void MergeIcons(IconMergeEventArgs merge)
     {
+        var config = configStore.Config;
         var folder = NewFolderPath();
-        if (DropEffect(folder, e) == DragDropEffects.None)
-        {
-            e.Effects = DragDropEffects.None;
-            return;
-        }
-
+        var name = Path.GetFileName(folder);
         try
         {
-            // The watcher turns it into a widget.
             Directory.CreateDirectory(folder);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            Log.Error("Creating a widget folder for a drop failed", exception);
-            e.Effects = DragDropEffects.None;
+            Log.Error("Creating a widget folder for merged icons failed", exception);
+            merge.Drop.Effects = DragDropEffects.None;
             return;
         }
 
-        ImportDropped(folder, e);
+        // The folder is made known with its place before the watcher turns it into a widget.
+        config.Widgets[name] = new WidgetConfig { Position = new ScreenPoint(merge.TargetCell.Left, merge.TargetCell.Top) };
+        var added = ItemImporter.Import([merge.TargetPath, .. merge.DroppedPaths], folder, config.DropMode, FolderPaths.Desktops, config.RootPath);
+        if (added == 0)
+        {
+            config.Widgets.Remove(name);
+            Directory.Delete(folder);
+            merge.Drop.Effects = DragDropEffects.None;
+            return;
+        }
+
+        configStore.Save();
+        Log.Info($"Dropped {merge.DroppedPaths.Length} item(s) on \"{Path.GetFileName(merge.TargetPath)}\": new folder \"{name}\" with {added} item(s).");
+
+        // See ImportDropped: never report Move to the source.
+        merge.Drop.Effects = DragDropEffects.Copy;
     }
 
     private static string[] DroppedPaths(DragEventArgs e) =>
@@ -324,19 +316,10 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
     private HashSet<ScreenPoint> TakenCells(DesktopSurface? except) =>
         Placed().Select(p => p.Surface).Where(s => s != except).Select(s => s.Position).ToHashSet();
 
-    // Every widget and the "new folder" tile, with how to save each one's position.
-    private IEnumerable<(DesktopSurface Surface, Func<ScreenPoint, bool> SavePosition)> Placed()
-    {
-        foreach (var entry in _entries.Values)
-        {
-            yield return (entry.Surface, position => SavePosition(entry.Folder.Name, position));
-        }
-
-        if (_addTile is { } tile)
-        {
-            yield return (tile.Surface, SaveAddTilePosition);
-        }
-    }
+    // Every widget, with how to save its position.
+    private IEnumerable<(DesktopSurface Surface, Func<ScreenPoint, bool> SavePosition)> Placed() =>
+        _entries.Values.Select<Entry, (DesktopSurface, Func<ScreenPoint, bool>)>(
+            entry => (entry.Surface, position => SavePosition(entry.Folder.Name, position)));
 
     private ScreenPoint? SavedPosition(string name) =>
         configStore.Config.Widgets.TryGetValue(name, out var widget) ? widget.Position : null;
@@ -351,8 +334,6 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
         widget.Position = position;
         return true;
     }
-
-    private sealed record AddTile(FolderWidget View, DesktopSurface Surface);
 
     /// <summary>One widget: its folder, its view and the desktop window hosting the view.</summary>
     private sealed class Entry
@@ -371,7 +352,12 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
 
             View.Clicked += (_, _) => board.WidgetClicked?.Invoke(board, new WidgetClickedEventArgs(Folder, board.BoundsOf(Surface)));
             View.PinRequested += (_, _) => board.PinRequested?.Invoke(board, Folder);
-            View.DragStarted += (_, _) => _dragOrigin = Surface.Position;
+            View.DeleteRequested += (_, _) => board.DeleteRequested?.Invoke(board, Folder);
+            View.DragStarted += (_, _) =>
+            {
+                _dragOrigin = Surface.Position;
+                board.WidgetDragStarted?.Invoke(board, EventArgs.Empty);
+            };
             View.Dragged += (_, offset) => Surface.MoveTo(_dragOrigin.Offset(offset.X, offset.Y));
             View.DragCompleted += (_, _) => board.Snap(Surface, position => board.SavePosition(Folder.Name, position));
             View.DragOver += (_, e) =>

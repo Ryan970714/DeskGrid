@@ -85,3 +85,14 @@ DestroyWindow
 RegisterClassEx
 SetWinEventHook
 UnhookWinEvent
+GetDC
+ReleaseDC
+BitBlt
+WindowFromPoint
+GetAncestor
+SHFileOperation
+FO_DELETE
+FILEOPERATION_FLAGS
+LVITEMW
+GetAsyncKeyState
+IsWindowVisible

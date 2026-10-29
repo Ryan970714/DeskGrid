@@ -41,13 +41,15 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 | 模組 | 資料夾 | 職責 |
 |---|---|---|
 | DesktopHost | `Desktop/` | 把 widget 視窗掛在桌面圖示層（所有一般視窗後方）；相容舊版與 Win11 24H2+ 桌面階層；Explorer 重啟後自動重新掛載 |
-| ConfigStore | `Config/` | `%APPDATA%\DeskGrid\config.json`，只存 widget 位置、面板欄數、項目排序、根目錄路徑、拖入模式，以及面板背景（2026-10-24 使用者同意新增） |
+| ConfigStore | `Config/` | `%APPDATA%\DeskGrid\config.json`，只存 widget 位置、面板欄數、項目排序、根目錄路徑、拖入模式，以及面板背景（2026-10-24 使用者同意新增）、刪除資料夾時項目的處理方式（`deleteMode`） |
 | FolderScanner | `Folders/` | 根目錄預設 `%USERPROFILE%\DeskGrid\`，每個子資料夾 = 一個 widget；FileSystemWatcher 監聽 Created/Deleted/Renamed/Changed，300ms debounce；Renamed 要轉移 config 中的位置與排序；根目錄位於使用者桌面時拒絕並提示 |
 | IconService | `Icons/` | IShellItemImageFactory 取 256px 圖示；依排序取前 4 個合成 2×2 預覽；快取，資料夾變動才重建 |
 | FolderWidget | `Widgets/` | 桌面上的資料夾圖示 + 名稱，可拖動並存位置（`FolderWidget` 視圖、`WidgetBoard` 同步與擺放、`WidgetGrid` 格線） |
 | PopupPanel | `Panel/` | 格子面板（預設 3 欄，超過可捲動，不分頁）；點項目用 ShellExecute 啟動；點外部 / Esc / 失焦收合 |
 | TrayApp | `Tray/`、`Settings/` | 系統匣選單：新增資料夾、開啟根目錄、設定、開機自啟開關、結束（`TrayIcon`、`AutoStart`；設定視窗與新增資料夾對話框在 `Settings/`） |
 | 拖放加入 | `Folders/ItemImporter` | 拖到 widget 的檔案依規則建捷徑 / 移動 / 複製 |
+| 刪除資料夾 | `Folders/FolderDeleter`、`Shell/RecycleBin` | widget 右鍵刪除：資料夾進資源回收筒，內容依設定先移到桌面或一併刪除 |
+| 疊圖示建資料夾 | `Widgets/IconMerger`、`Folders/DesktopFiles` | 桌面圖示拖到另一個圖示上 → 新資料夾（拖曳期間以一個透明接收區接手 Explorer 的放開） |
 | 工作列釘選 | `Taskbar/` | widget 右鍵「釘選到工作列」：建 `--open "資料夾"` 捷徑讓使用者自己釘；系統匣「把所有資料夾釘選到工作列」建 `--all` 捷徑（面板列出所有資料夾）；點下去由命名管線（`InstanceChannel`）通知執行中的 DeskGrid 在游標處開面板；捷徑各帶 AppUserModelID，工作列才不會合併 |
 | 版本檢查 | `Updates/` | 啟動後 8 秒與設定視窗的「檢查更新」按鈕：查 GitHub 最新 release，有新版本彈出「更新 / 維持 / 取消」；更新 = 下載 exe、驗 SHA256、由 PowerShell 小腳本在程式結束後換檔並重啟 |
 | （輔助）Shell | `Shell/` | Shell 互通：`ShellImage`（圖示）、`ShellItem`（ShellExecute 開啟、顯示名稱）、`ShortcutFile`（建 .lnk） |
@@ -96,7 +98,7 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 - **拖曳**：`FolderWidget` 只把滑鼠轉成 Clicked / DragStarted / Dragged(游標位移, 實體像素) / DragCompleted，超過系統 `SM_CXDRAG` 才算拖。拖曳中自由跟隨游標；放開後吸到最近空格（目標格有人 → 次近空格）並存檔。
 - **生命週期**：`WidgetBoard.Show` 依資料夾名稱比對：消失的移除、新的建立、既有的更新名稱與預覽。資料夾改名 = 舊 widget 移除、新 widget 在轉移過來的位置建立。
 - **DesktopHost**：`Add` 在已有圖示層時立即掛上（快取上次找到的 DefView，`IsWindow` 檢查），`Remove` 銷毀視窗；建立子視窗失敗（`Win32Exception`）→ 進入重試。
-- **暫時**：widget 右鍵選單只有「結束 DeskGrid」，階段 6 系統匣完成後移除。
+- **右鍵選單**：「釘選到工作列…」「刪除資料夾…」。
 - **不搶啟用**：`DesktopSurface` 對 `WM_MOUSEACTIVATE` 回 `MA_NOACTIVATE`。否則點 widget 會啟用 Explorer 桌面，而 Explorer 會吞掉這次啟用點擊（面板開著時 widget 收不到按下）。
 
 ## Panel 實作要點（階段 5）
@@ -137,6 +139,20 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 - **三個選項**：更新（下載 → 驗 SHA256（取自 release 資產的 API `digest` 欄位）→ `apply-update.ps1` 等本程序結束後 `Move-Item` 蓋掉 exe 再啟動；只有發布的單檔 exe 做得到，`UpdateInstaller.CanReplaceSelf`，開發版與無法寫入的資料夾改開 release 頁）、維持（config `skippedUpdateVersion` 記下該 tag，自動檢查不再提醒，手動檢查仍會彈）、取消（什麼都不存，下次啟動再提醒）。
 - **觸發**：啟動後 8 秒自動檢查一次（網路失敗只記 log，不打擾）；設定視窗顯示目前版本與「檢查更新」按鈕，結果文字顯示在按鈕旁。
 
+## 刪除資料夾與疊圖示建資料夾（階段 8）
+
+- **刪除**（`App.DeleteFolder`）：widget 右鍵「刪除資料夾…」→ 確認對話框 → `FolderDeleter.Delete`。資料夾本身一律進資源回收筒（`Shell/RecycleBin`，`SHFileOperation` + `FOF_ALLOWUNDO`；放不進資源回收筒時 shell 會先問，`FOF_WANTNUKEWARNING`）。config `deleteMode`（設定視窗）：`moveToDesktop`（預設，先把可見的檔案與子資料夾移到使用者桌面、同名加「 (2)」）/ `deleteItems`（連同資料夾進資源回收筒）。有任何項目移不過去 → **不刪資料夾**並顯示原因。桌面 widget 由 scanner 的 Deleted 事件移除，config 殘留由 `Reconcile` 清掉，不必另外處理。
+- **疊圖示**（`Widgets/IconMerger`，使用者選定 2026-10-29）：把桌面圖示拖到另一個桌面圖示上 → 新資料夾（名稱 `WidgetFolderName.Suggest`）取代被放上的圖示位置，內含兩者（`WidgetBoard.MergeIcons` → `ItemImporter.Import`，規則同拖到 widget）。Explorer 自己把「放到另一個捷徑上」當「用它開啟」，所以拖曳期間要自己接：
+  - **偵測**：`DesktopIconWatcher` 的 WinEvent 範圍加上 `EVENT_SYSTEM_CAPTURESTART`（0x8，實測點一下桌面圖示會依序來 0x8 / 0x9）→ `DesktopHost.DesktopPressed`。`IconMerger` 在按下當下讀圖示格（游標在某個圖示格內才繼續），之後每 20 ms 看左鍵（`GetAsyncKeyState`，左右鍵互換時看右鍵）與位移是否超過 `SM_CXDRAG`，超過才算開始拖曳；放開後 500 ms 收掉接收區。
+  - **接收區**：**只用一個**透明 `DesktopSurface`（`AllowDrop` 的 `Border`，背景 alpha=1）跟著游標所在圖示的範圍（圖示格頂端到圖示圖片底部，下面的名稱留給 Explorer）移動，游標不在任何圖示上時停到螢幕外（-30000）。每個圖示一個視窗行不通：實測一個 `HwndSource` 掛到桌面要約 26 ms，40 個圖示會凍結約 1 秒。實測（真實 Explorer）：alpha=1 的接收區**看不見但會被 `WindowFromPoint` 命中**，alpha=0 則穿透，所以不能用 0。
+  - **圖示 → 檔案**：`LVM_GETITEMTEXTW`（跨行程，`DesktopIconGrid.ReadNames`，與讀位置共用 `RemoteBuffer`）取得圖示下方的名稱，再用 `DesktopFiles.ByDisplayName` 對應到使用者 / 公用桌面的檔案（名稱用 `ShellItem.GetDisplayName`，與 Explorer 一致）；同名（兩個桌面都有、或副檔名隱藏後撞名）不對應，該圖示不接受疊放。本機、資源回收筒等虛擬圖示對應不到檔案，也不接受。桌面上的**真資料夾**也不接受（保留 Explorer 原本「拖進資料夾」的行為）。
+  - **不可在拖曳回呼裡呼叫 Explorer**：DragEnter / DragOver / Drop 都是 Explorer 的 OLE 迴圈同步 RPC 進來的，此時對 Explorer 的 list view 送訊息可能互等。所以圖示讀取在按下當下 / 開始拖曳時做，回呼裡只用已讀好的資料。
+  - **位置**：新資料夾的 config 位置先設成被放上圖示的格，再匯入項目，之後 scanner 看到資料夾時 `WidgetBoard.Add` 吸到最近空格（圖示被移走 = 就是那一格；沒移走〔複製模式、非捷徑〕= 旁邊最近的空格）。
+  - 回報給來源的效果一律 Copy（同 widget 拖放）；一個項目都沒加進去 → 刪掉剛建的空資料夾、回報 None。
+- **桌面上不再有「新增資料夾」磚**（2026-10-29 使用者要求移除）：新增資料夾走系統匣「新增資料夾…」或疊圖示；原本「把檔案拖到磚上建資料夾」由疊圖示取代，config 的 `addTilePosition` 已移除（舊 config 裡的值載入時被忽略）。
+- **面板開著時拖 widget**：`WidgetBoard.WidgetDragStarted` → `PanelController.Close()`（原本面板留在 widget 的舊位置）。
+- **測試注意**：從 Claude 桌面 App（MSIX）啟動的行程（含 `dotnet test`）**不能把視窗掛到 Explorer 的桌面底下**（`HwndWrapper` 建立失敗，錯誤碼 0），所以 `DesktopSurface` / `IconMerger` 無法寫成單元測試；要驗證桌面行為，只能在真正的 DeskGrid 行程（用 `explorer.exe <exe>` 啟動）裡加暫時的探測碼並讀 log。
+
 ## 發布與 CI（階段 7）
 
 - **GitHub**：公開 repo `Ryan970714/DeskGrid`，預設分支 `main`，MIT（著作權人 Ryan Kuo）。README 英文（`README.md`）+ 繁中（`README.zh-TW.md`），內容需保持一致。
@@ -168,6 +184,7 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 | 5 | PopupPanel（格子、啟動、收合） | ✅ 2026-10-25 使用者驗證通過 |
 | 6 | 拖放加入、TrayApp、開機自啟 | ✅ 2026-10-25 使用者驗證通過 |
 | 7 | GitHub Actions CI、self-contained 打包、README（含 SmartScreen 未簽章說明）、LICENSE (MIT) | ✅ 完成 2026-10-25，已推上 GitHub、CI 通過、v0.1.0 已發布，待使用者驗證 |
+| 8 | 刪除資料夾（右鍵 + 設定）、桌面圖示疊圖示建資料夾、修 bug | 完成 2026-10-29（建置 / 146 測試通過）；右鍵刪除與疊圖示拖曳因工具限制未能實機操作，待使用者驗證 |
 
 # 工作方式
 

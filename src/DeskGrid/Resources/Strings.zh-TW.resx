@@ -108,9 +108,6 @@
   <data name="RootFolderNotAbsolute" xml:space="preserve">
     <value>不是完整路徑。</value>
   </data>
-  <data name="WidgetAddTile" xml:space="preserve">
-    <value>新增資料夾</value>
-  </data>
   <data name="WidgetPinToTaskbar" xml:space="preserve">
     <value>釘選到工作列…</value>
   </data>
@@ -194,5 +191,38 @@
   </data>
   <data name="SettingsUpdateAvailable" xml:space="preserve">
     <value>有新版本 {0}。</value>
+  </data>
+  <data name="WidgetDelete" xml:space="preserve">
+    <value>刪除資料夾…</value>
+  </data>
+  <data name="DeleteConfirmEmpty" xml:space="preserve">
+    <value>要刪除資料夾「{0}」嗎？&#10;&#10;資料夾會移到資源回收筒。</value>
+  </data>
+  <data name="DeleteConfirmMove" xml:space="preserve">
+    <value>要刪除資料夾「{0}」嗎？&#10;&#10;其中的 {1} 個項目會先移到桌面，資料夾則移到資源回收筒。</value>
+  </data>
+  <data name="DeleteConfirmItems" xml:space="preserve">
+    <value>要刪除資料夾「{0}」和其中的 {1} 個項目嗎？&#10;&#10;它們會移到資源回收筒。</value>
+  </data>
+  <data name="DeleteMoveFailed" xml:space="preserve">
+    <value>因為無法把全部項目移到桌面，所以沒有刪除資料夾：{0}</value>
+  </data>
+  <data name="DeleteNoDesktop" xml:space="preserve">
+    <value>找不到要放項目的桌面資料夾，所以沒有刪除資料夾。</value>
+  </data>
+  <data name="DeleteStopped" xml:space="preserve">
+    <value>資料夾沒有被刪除。</value>
+  </data>
+  <data name="DeleteFailed" xml:space="preserve">
+    <value>無法刪除資料夾：{0}</value>
+  </data>
+  <data name="SettingsDeleteMode" xml:space="preserve">
+    <value>刪除資料夾時，裡面的項目</value>
+  </data>
+  <data name="SettingsDeleteMove" xml:space="preserve">
+    <value>移至桌面</value>
+  </data>
+  <data name="SettingsDeleteItems" xml:space="preserve">
+    <value>一併刪除</value>
   </data>
 </root>

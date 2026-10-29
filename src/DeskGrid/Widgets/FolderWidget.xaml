@@ -6,30 +6,22 @@
   <Border x:Name="Highlight" CornerRadius="4" Padding="2,4">
     <StackPanel>
       <Border Width="48" Height="48" CornerRadius="10.7" Padding="5.8" Background="#4DFFFFFF">
-        <Grid>
-          <Image x:Name="Preview" RenderOptions.BitmapScalingMode="HighQuality" />
-          <!-- Drawn, not a "+" glyph: a font's line metrics put the glyph off the tile's center. -->
-          <Path x:Name="Plus"
-                Visibility="Collapsed"
-                Data="M 11,0 V 22 M 0,11 H 22"
-                Stroke="White"
-                StrokeThickness="2"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center" />
-        </Grid>
+        <Image x:Name="Preview" RenderOptions.BitmapScalingMode="HighQuality" />
       </Border>
-      <TextBlock x:Name="Label"
-                 Margin="0,4,0,0"
-                 Foreground="White"
-                 TextAlignment="Center"
-                 TextWrapping="Wrap"
-                 TextTrimming="CharacterEllipsis"
-                 FontFamily="{x:Static SystemFonts.IconFontFamily}"
-                 FontSize="{x:Static SystemFonts.IconFontSize}">
-        <TextBlock.Effect>
-          <DropShadowEffect ShadowDepth="1" BlurRadius="3" Opacity="0.8" />
-        </TextBlock.Effect>
-      </TextBlock>
+      <!-- Halo: a second shadow around the text and its own shadow, switched on over a light wallpaper. -->
+      <Border x:Name="Halo" Margin="0,4,0,0">
+        <TextBlock x:Name="Label"
+                   Foreground="White"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap"
+                   TextTrimming="CharacterEllipsis"
+                   FontFamily="{x:Static SystemFonts.IconFontFamily}"
+                   FontSize="{x:Static SystemFonts.IconFontSize}">
+          <TextBlock.Effect>
+            <DropShadowEffect ShadowDepth="1" BlurRadius="3" Opacity="0.8" />
+          </TextBlock.Effect>
+        </TextBlock>
+      </Border>
     </StackPanel>
   </Border>
 </UserControl>

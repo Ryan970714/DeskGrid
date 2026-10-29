@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using DeskGrid.Desktop;
 using DeskGrid.Diagnostics;
@@ -25,6 +26,8 @@ internal partial class FolderWidget : UserControl
     private const int MaxLabelLines = 2;
     private static readonly Brush HoverBrush = Frozen(new SolidColorBrush(Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF)));
 
+    private static readonly Effect HaloEffect = Frozen(new DropShadowEffect { ShadowDepth = 0, BlurRadius = 5, Opacity = 1, Color = Colors.Black });
+
     private Task<BitmapSource>? _preview;
     private ScreenPoint _pressPoint;
     private bool _dragging;
@@ -41,7 +44,9 @@ internal partial class FolderWidget : UserControl
 
         var pin = new MenuItem { Header = Strings.WidgetPinToTaskbar };
         pin.Click += (_, _) => PinRequested?.Invoke(this, EventArgs.Empty);
-        ContextMenu = new ContextMenu { Items = { pin } };
+        var delete = new MenuItem { Header = Strings.WidgetDelete };
+        delete.Click += (_, _) => DeleteRequested?.Invoke(this, EventArgs.Empty);
+        ContextMenu = new ContextMenu { Items = { pin, delete } };
     }
 
     public event EventHandler? Clicked;
@@ -55,17 +60,30 @@ internal partial class FolderWidget : UserControl
 
     public event EventHandler? PinRequested;
 
+    public event EventHandler? DeleteRequested;
+
+    /// <summary>Whether the name has a dark halo for legibility over a light wallpaper.</summary>
+    public bool HasHalo
+    {
+        get => Halo.Effect is not null;
+        set => Halo.Effect = value ? HaloEffect : null;
+    }
+
+    /// <summary>Where the name is on screen (physical pixels), or <see langword="null"/> while the widget isn't shown.</summary>
+    public ScreenRect? LabelBounds()
+    {
+        if (PresentationSource.FromVisual(Halo) is null || Halo.ActualWidth <= 0 || Halo.ActualHeight <= 0)
+        {
+            return null;
+        }
+
+        var topLeft = Halo.PointToScreen(new Point(0, 0));
+        var bottomRight = Halo.PointToScreen(new Point(Halo.ActualWidth, Halo.ActualHeight));
+        return new ScreenRect((int)topLeft.X, (int)topLeft.Y, (int)bottomRight.X, (int)bottomRight.Y);
+    }
+
     /// <summary>Sets the cell the widget fills (DIP); the content stays centered in it.</summary>
     public void SetCellSize(double width, double height) => (Width, Height) = (width, height);
-
-    /// <summary>Turns the widget into the "new folder" tile: a plus sign instead of a preview, no folder menu.</summary>
-    public void ShowAddTile(string label)
-    {
-        Label.Text = label;
-        Preview.Visibility = Visibility.Collapsed;
-        Plus.Visibility = Visibility.Visible;
-        ContextMenu = null;
-    }
 
     public void Show(string name, Task<BitmapSource> preview)
     {

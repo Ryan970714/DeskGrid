@@ -31,15 +31,15 @@ src/DeskGrid/
   Assets/                 DeskGrid.ico (tools/make-icon.ps1)
   Desktop/                DesktopHost, DesktopSurface, IconLayer, MonitorArea, ShellMessageWindow, ScreenPoint/ScreenRect
   Diagnostics/            Log
-  Folders/                FolderScanner, WidgetCatalog, RootFolder, FolderPaths, ItemImporter, WidgetFolderName, NaturalStringComparer, records
+  Folders/                FolderScanner, WidgetCatalog, RootFolder, FolderPaths, ItemImporter, FolderDeleter, DesktopFiles, WidgetFolderName, NaturalStringComparer, records
   Icons/                  IconService, PreviewComposer
   Panel/                  PopupPanel (XAML), PanelController, PanelPlacement, PanelTheme, Backdrop, PanelItem
   Resources/              Strings.resx (en), Strings.zh-TW.resx
   Settings/               SettingsWindow (XAML), NewFolderDialog (XAML), ColorDialog
-  Shell/                  ShellImage, ShellItem, ShortcutFile
+  Shell/                  ShellImage, ShellItem, ShortcutFile, RecycleBin
   Threading/              DispatcherThread (STA worker)
   Tray/                   TrayIcon, AutoStart
-  Widgets/                FolderWidget (XAML), WidgetBoard, WidgetGrid
+  Widgets/                FolderWidget (XAML), WidgetBoard, WidgetGrid, IconMerger
 tests/DeskGrid.Tests/  xUnit v3
 tools/                    make-icon.ps1
 context/                  session context docs

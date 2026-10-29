@@ -39,6 +39,16 @@
 
     <Border Style="{StaticResource Card}">
       <StackPanel>
+        <TextBlock x:Name="DeleteModeLabel" Style="{StaticResource CardTitle}" TextWrapping="Wrap" />
+        <StackPanel Orientation="Horizontal">
+          <RadioButton MinWidth="0" Margin="0,0,24,0" x:Name="DeleteMove" GroupName="DeleteMode" />
+          <RadioButton MinWidth="0" Margin="0,0,24,0" x:Name="DeleteItems" GroupName="DeleteMode" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <Border Style="{StaticResource Card}">
+      <StackPanel>
         <TextBlock x:Name="BackgroundLabel" Style="{StaticResource CardTitle}" />
         <WrapPanel>
           <RadioButton MinWidth="0" Margin="0,0,24,0" x:Name="BackgroundSystem" GroupName="Background" />

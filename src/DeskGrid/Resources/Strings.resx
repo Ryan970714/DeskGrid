@@ -113,9 +113,6 @@ Using the default root folder instead:
   <data name="RootFolderNotAbsolute" xml:space="preserve">
     <value>it is not a full path.</value>
   </data>
-  <data name="WidgetAddTile" xml:space="preserve">
-    <value>New folder</value>
-  </data>
   <data name="WidgetPinToTaskbar" xml:space="preserve">
     <value>Pin to taskbar…</value>
   </data>
@@ -200,5 +197,43 @@ Using the default root folder instead:
   </data>
   <data name="SettingsUpdateAvailable" xml:space="preserve">
     <value>Version {0} is available.</value>
+  </data>
+  <data name="WidgetDelete" xml:space="preserve">
+    <value>Delete folder…</value>
+  </data>
+  <data name="DeleteConfirmEmpty" xml:space="preserve">
+    <value>Delete the folder "{0}"?&#10;&#10;The folder goes to the Recycle Bin.</value>
+    <comment>{0} = folder name</comment>
+  </data>
+  <data name="DeleteConfirmMove" xml:space="preserve">
+    <value>Delete the folder "{0}"?&#10;&#10;Its {1} item(s) are moved to the desktop first. The folder goes to the Recycle Bin.</value>
+    <comment>{0} = folder name, {1} = number of items</comment>
+  </data>
+  <data name="DeleteConfirmItems" xml:space="preserve">
+    <value>Delete the folder "{0}" and its {1} item(s)?&#10;&#10;They go to the Recycle Bin.</value>
+    <comment>{0} = folder name, {1} = number of items</comment>
+  </data>
+  <data name="DeleteMoveFailed" xml:space="preserve">
+    <value>The folder was not deleted because not everything could be moved to the desktop: {0}</value>
+    <comment>{0} = names of the items that could not be moved</comment>
+  </data>
+  <data name="DeleteNoDesktop" xml:space="preserve">
+    <value>The folder was not deleted because the desktop folder to move its items to was not found.</value>
+  </data>
+  <data name="DeleteStopped" xml:space="preserve">
+    <value>The folder was not deleted.</value>
+  </data>
+  <data name="DeleteFailed" xml:space="preserve">
+    <value>Could not delete the folder: {0}</value>
+    <comment>{0} = reason</comment>
+  </data>
+  <data name="SettingsDeleteMode" xml:space="preserve">
+    <value>When a folder is deleted, the items inside it</value>
+  </data>
+  <data name="SettingsDeleteMove" xml:space="preserve">
+    <value>Move to the desktop</value>
+  </data>
+  <data name="SettingsDeleteItems" xml:space="preserve">
+    <value>Are deleted along with it</value>
   </data>
 </root>

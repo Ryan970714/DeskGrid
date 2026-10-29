@@ -373,3 +373,30 @@
 **Alternatives**: 改用滑鼠 hook 判斷「點外部」而不靠失焦（改動大，鍵盤切換等情況也要另外處理）；截圖結束後強制把面板拉回前景（跨行程搶前景不可靠）。
 **Consequences**: 只認行程名稱，第三方截圖工具（ShareX、Snipaste 等）仍會讓面板收合。
 **Author**: Claude
+
+---
+
+### 2026-10-29 — 刪除資料夾：進資源回收筒，項目預設先移到桌面
+**Decision**: widget 右鍵「刪除資料夾…」，確認後資料夾一律以 `SHFileOperation(FOF_ALLOWUNDO)` 送資源回收筒。設定 `deleteMode`：`moveToDesktop`（預設）先把資料夾內可見的檔案與子資料夾移到使用者桌面（同名加「 (2)」），任何一個移不過去就**不刪資料夾**並顯示原因；`deleteItems` 連項目一起進資源回收筒。
+**Reason**: 使用者要求兩種處理方式可選（一併刪除 / 移至桌面）。預設選保留資料的那個；資源回收筒讓誤刪可還原，所以不另外做「永久刪除」。
+**Alternatives**: 直接 `Directory.Delete`（不可還原）；`Microsoft.VisualBasic.FileIO`（多帶一個組件，且專案規定 Win32 走 CsWin32）；`IFileOperation`（較新但設定較多）。
+**Consequences**: 移到桌面的項目由 Explorer 自己擺位置，可能落在 widget 格上，交給既有的 `ClearIconsOffWidgets`；工作列釘選的暫存捷徑不清理（見 todo）。
+**Author**: 使用者決定要有此設定，預設值與資源回收筒由 Claude 選擇
+
+---
+
+### 2026-10-29 — 桌面圖示疊圖示：單一透明接收區跟著游標
+**Decision**: 使用者選「桌面圖示疊圖示 → 兩個一起進新資料夾」。實作：`DesktopIconWatcher` 加 `EVENT_SYSTEM_CAPTURESTART` 偵測按下；按在圖示上且位移超過拖曳距離才算拖曳；拖曳期間只用**一個** alpha=1 的透明 `DesktopSurface`（`AllowDrop`），每 20 ms 移到游標所在圖示的範圍上，放開後 500 ms 收掉。圖示名稱用 `LVM_GETITEMTEXTW` 讀、`DesktopFiles` 對應到桌面檔案；對應不到 / 名稱重複 / 桌面上的真資料夾不接受。
+**Reason**: Explorer 把「放到另一個捷徑上」當「用它開啟」，沒辦法在放開後補救，只能在拖曳期間接手。每個圖示一個視窗實測 26 ms × 40 = 1 秒會凍結拖曳開始；alpha=0 的視窗穿透（實測），alpha=1 看不見但會被命中。
+**Alternatives**: 每個圖示一個接收區（太慢，可預建池但更複雜）；全螢幕單一視窗 + 區域（`SetWindowRgn`，圖層視窗行為不確定）；只做「把兩個 widget 疊起來合併」（風險低但不是使用者要的「app 疊 app」）；`IFolderView` 取圖示路徑（精確但跨行程 COM 風險高，改用名稱對應）。
+**Consequences**: 拖曳期間「把檔案拖到程式捷徑上用它開啟」在游標落在這些圖示時被改成建資料夾；游標移進圖示到接收區就位約 20 ms，極快的拖放可能漏接；所有 Explorer 讀取都在按下 / 開始拖曳時做，不在 OLE 回呼裡。桌面行為無法單元測試（見 CLAUDE.md 階段 8 的測試注意）。
+**Author**: 使用者選定做法，Claude 實作
+
+---
+
+### 2026-10-29 — 移除桌面上的「新增資料夾」磚
+**Decision**: 桌面不再顯示「新增資料夾」磚（`WidgetBoard` 的 add tile、`FolderWidget.ShowAddTile`、`WidgetAddTile` 字串、config `addTilePosition` 全部刪除）。新增資料夾剩系統匣「新增資料夾…」、桌面圖示疊圖示、在根目錄建子資料夾。
+**Reason**: 使用者要求。疊圖示上線後，磚的「拖檔案進去建資料夾」功能被取代，磚本身也佔一格桌面。
+**Alternatives**: 保留磚但可在設定隱藏（使用者沒要）。
+**Consequences**: 一次拖多個檔案建資料夾的路徑只剩「疊圖示」（一次兩個以上：多選後拖到另一個圖示上）；非桌面來源的檔案（例如開始功能表）要先建資料夾再拖進去。舊 config 的 `addTilePosition` 被 JSON 反序列化忽略，下次存檔即消失。
+**Author**: 使用者決定，Claude 實作

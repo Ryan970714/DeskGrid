@@ -2,7 +2,6 @@ using System.IO;
 using System.Windows.Media;
 using DeskGrid.Config;
 using DeskGrid.Desktop;
-using DeskGrid.Diagnostics;
 using DeskGrid.Folders;
 using DeskGrid.Icons;
 using DeskGrid.Panel;
@@ -137,22 +136,19 @@ public sealed class DragGhostTests : IDisposable
     [Fact]
     public async Task ShowAndLand_DrawTheIcon()
     {
-        var before = FailureCount();
         var landed = new TaskCompletionSource();
-        await _ui.InvokeAsync(() =>
+        var ghost = await _ui.InvokeAsync(() =>
         {
             var icon = new DrawingImage(new GeometryDrawing(Brushes.SteelBlue, null, new RectangleGeometry(new(0, 0, 48, 48))));
             var ghost = new DragGhost(icon, new ScreenPoint(200, 200));
             ghost.Show();
             ghost.Lift();
             ghost.Land(new ScreenPoint(260, 260), vanish: false, landed.SetResult);
+            return ghost;
         });
         await landed.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         // A window WPF also renders into refuses UpdateLayeredWindow, and the ghost shows as a black square.
-        Assert.Equal(before, FailureCount());
+        Assert.Equal(0, ghost.FailedDraws);
     }
-
-    private static int FailureCount() =>
-        File.Exists(Log.FilePath) ? File.ReadLines(Log.FilePath).Count(line => line.Contains("Drawing the drag ghost failed")) : 0;
 }

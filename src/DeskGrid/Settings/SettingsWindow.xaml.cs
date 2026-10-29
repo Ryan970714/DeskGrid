@@ -10,7 +10,8 @@ using Microsoft.Win32;
 namespace DeskGrid.Settings;
 
 /// <summary>What the user chose in <see cref="SettingsWindow"/>.</summary>
-internal sealed record SettingsChoice(string RootPath, int PanelColumns, DropMode DropMode, PanelBackground PanelBackground);
+internal sealed record SettingsChoice(
+    string RootPath, int PanelColumns, DropMode DropMode, DeleteMode DeleteMode, PanelBackground PanelBackground);
 
 /// <summary>Edits a copy of the settings; <see cref="Applied"/> fires on OK with a validated choice.</summary>
 internal partial class SettingsWindow : Window
@@ -29,6 +30,7 @@ internal partial class SettingsWindow : Window
         ColumnsBox.ItemsSource = Enumerable.Range(1, MaxColumns).ToList();
         ColumnsBox.SelectedItem = Math.Clamp(config.PanelColumns, 1, MaxColumns);
         (config.DropMode == DropMode.Copy ? DropCopy : DropMove).IsChecked = true;
+        (config.DeleteMode == DeleteMode.DeleteItems ? DeleteItems : DeleteMove).IsChecked = true;
 
         var background = config.PanelBackground;
         BackgroundRadio(background.Style).IsChecked = true;
@@ -81,6 +83,9 @@ internal partial class SettingsWindow : Window
         DropModeLabel.Text = Strings.SettingsDropMode;
         DropMove.Content = Strings.SettingsDropMove;
         DropCopy.Content = Strings.SettingsDropCopy;
+        DeleteModeLabel.Text = Strings.SettingsDeleteMode;
+        DeleteMove.Content = Strings.SettingsDeleteMove;
+        DeleteItems.Content = Strings.SettingsDeleteItems;
         BackgroundLabel.Text = Strings.SettingsBackground;
         BackgroundSystem.Content = Strings.SettingsBackgroundSystem;
         BackgroundDark.Content = Strings.SettingsBackgroundDark;
@@ -131,7 +136,12 @@ internal partial class SettingsWindow : Window
             CustomColor = $"#{_customColor.R:X2}{_customColor.G:X2}{_customColor.B:X2}",
             CustomOpacity = Math.Round(OpacitySlider.Value, 2),
         };
-        Applied?.Invoke(this, new SettingsChoice(rootPath, (int)ColumnsBox.SelectedItem, DropCopy.IsChecked == true ? DropMode.Copy : DropMode.Move, background));
+        Applied?.Invoke(this, new SettingsChoice(
+            rootPath,
+            (int)ColumnsBox.SelectedItem,
+            DropCopy.IsChecked == true ? DropMode.Copy : DropMode.Move,
+            DeleteItems.IsChecked == true ? DeleteMode.DeleteItems : DeleteMode.MoveToDesktop,
+            background));
         Close();
     }
 }

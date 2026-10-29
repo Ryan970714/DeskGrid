@@ -142,8 +142,9 @@ public partial class App : Application
         var board = new WidgetBoard(_desktopHost!, _configStore!, _icons!);
         board.WidgetClicked += (_, click) => _panels!.Toggle(click.Folder, click.Bounds);
         board.DragHovered += (_, hover) => _panels!.OpenForDrag(hover.Folder, hover.Bounds);
-        board.AddRequested += (_, _) => CreateFolder();
+        board.WidgetDragStarted += (_, _) => _panels!.Close(); // The panel would stay where the widget was.
         board.PinRequested += (_, folder) => _ = PinToTaskbarAsync(folder);
+        board.DeleteRequested += (_, folder) => DeleteFolder(folder);
 
         var catalog = new WidgetCatalog(_configStore!);
         catalog.Changed += (_, _) =>
@@ -239,6 +240,27 @@ public partial class App : Application
         {
             Log.Error($"Renaming \"{oldName}\" to \"{newName}\" failed", exception);
             return string.Format(Strings.RenameFailed, exception.Message);
+        }
+    }
+
+    // Asks, then deletes a widget's folder (the Recycle Bin keeps it); the scanner takes the widget down.
+    private void DeleteFolder(WidgetFolder folder)
+    {
+        var mode = _configStore!.Config.DeleteMode;
+        var count = FolderDeleter.Entries(folder.FullPath).Count;
+        var question = count == 0 ? Strings.DeleteConfirmEmpty
+            : mode == DeleteMode.MoveToDesktop ? Strings.DeleteConfirmMove
+            : Strings.DeleteConfirmItems;
+        if (MessageBox.Show(string.Format(question, folder.Name, count), Strings.AppName,
+                MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+        if (FolderDeleter.Delete(folder.FullPath, mode, desktop, RecycleBin.Send) is { } problem)
+        {
+            MessageBox.Show(problem, Strings.AppName, MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -414,6 +436,7 @@ public partial class App : Application
         config.RootPath = choice.RootPath;
         config.PanelColumns = choice.PanelColumns;
         config.DropMode = choice.DropMode;
+        config.DeleteMode = choice.DeleteMode;
         config.PanelBackground = choice.PanelBackground;
         _configStore.Save();
 

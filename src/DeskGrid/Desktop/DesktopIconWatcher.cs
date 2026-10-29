@@ -11,11 +11,13 @@ namespace DeskGrid.Desktop;
 /// </summary>
 /// <remarks>
 /// The icon list view reports added and removed icons, but not moved ones (measured): those are caught by
-/// the end of the mouse capture that every drag on the desktop holds.
+/// the end of the mouse capture that every drag on the desktop holds. The start of it says a mouse button
+/// went down on the desktop.
 /// </remarks>
 internal sealed class DesktopIconWatcher : IDisposable
 {
     // WinEvents (winuser.h).
+    private const uint CaptureStart = 0x0008;
     private const uint CaptureEnd = 0x0009;
     private const uint ObjectCreate = 0x8000;
     private const uint ObjectDestroy = 0x8001;
@@ -42,6 +44,9 @@ internal sealed class DesktopIconWatcher : IDisposable
 
     public event EventHandler? Changed;
 
+    /// <summary>The desktop took the mouse (a button went down on it, which may turn into a drag). Raised right away, and again when a drag takes over.</summary>
+    public event EventHandler? Pressed;
+
     /// <summary>Follows <paramref name="listView"/> (Explorer's <c>SysListView32</c>) from now on.</summary>
     public void Watch(HWND listView)
     {
@@ -60,7 +65,7 @@ internal sealed class DesktopIconWatcher : IDisposable
 
         // Only the desktop's own thread, not the taskbar or Explorer windows. Out of context: the events
         // are posted to this (UI) thread's message loop.
-        _hook = PInvoke.SetWinEventHook(CaptureEnd, ObjectLocationChange, HMODULE.Null, _callback, processId, thread, OutOfContext);
+        _hook = PInvoke.SetWinEventHook(CaptureStart, ObjectLocationChange, HMODULE.Null, _callback, processId, thread, OutOfContext);
     }
 
     public void Dispose()
@@ -80,6 +85,12 @@ internal sealed class DesktopIconWatcher : IDisposable
 
     private void OnEvent(HWINEVENTHOOK hook, uint @event, HWND window, int objectId, int childId, uint thread, uint time)
     {
+        if (@event == CaptureStart)
+        {
+            Pressed?.Invoke(this, EventArgs.Empty);
+            return;
+        }
+
         // A drag's capture may belong to a helper window of the thread, so any window counts for that one.
         var relevant = @event == CaptureEnd
             || (window == _listView && @event is ObjectCreate or ObjectDestroy or ObjectReorder or ObjectLocationChange);
