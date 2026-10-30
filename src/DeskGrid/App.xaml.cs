@@ -134,8 +134,6 @@ public partial class App : Application
     private IReadOnlyList<TrayMenuItem> TrayMenu() =>
     [
         new(Strings.TrayNewFolder, CreateFolder),
-        new(Strings.TrayOpenRoot, () => ShellItem.Open(_configStore!.Config.RootPath)),
-        new(Strings.TrayPinAllFolders, PinAllFoldersToTaskbar),
         new(Strings.TraySettings, ShowSettings),
         TrayMenuItem.Separator,
         new(Strings.TrayAutoStart, ToggleAutoStart, _autoStart!.IsEnabled),
@@ -487,6 +485,7 @@ public partial class App : Application
         var settings = new SettingsWindow(_configStore!.Config);
         settings.Applied += (_, choice) => ApplySettings(choice);
         settings.CheckForUpdates = () => CheckForUpdatesAsync(manual: true, settings);
+        settings.PinAllFolders = PinAllFoldersToTaskbar;
         settings.Closed += (_, _) => _settings = null;
         _settings = settings;
         settings.Show();

@@ -426,3 +426,12 @@
 **Alternatives**: 拖曳中即時高亮資源回收筒（Explorer 的圖示不能改，需另畫覆蓋層，沒做）；放開就直接刪（太危險）。
 **Consequences**: 靠圖示下的名稱辨識資源回收筒（`RecycleBin.DisplayName`），改名或換語言都會跟著走；桌面上沒顯示資源回收筒時不會有這個行為。
 **Author**: 使用者要求，Claude 決定細節
+
+---
+
+### 2026-10-30 — 設定視窗收納：開啟根目錄、釘選工作列、GitHub、更新紀錄
+**Decision**: 系統匣選單只留「新增資料夾…」「設定…」「開機時啟動」「結束」。「開啟根目錄」改成設定視窗根目錄欄位旁的「開啟」按鈕；「把所有資料夾釘選到工作列…」改成設定視窗「工作列」卡片的按鈕；設定視窗新增 GitHub 網址（可點）與「更新紀錄…」。更新紀錄的內容是把 `CHANGELOG.md` 編進 exe（EmbeddedResource），在 `ChangeLogWindow` 顯示。
+**Reason**: 使用者要求。系統匣選單太長；根目錄與釘選是設定性質的動作。更新紀錄編進 exe：離線可看、永遠對應執行中的版本（不必連 GitHub），且單檔 exe 不需另外帶檔案。
+**Alternatives**: 從 GitHub 抓 release notes（要網路、版本不一定對應）；另寫一份中文更新紀錄（每次發版要多維護一份，沒做，更新紀錄目前只有英文）。
+**Consequences**: 「開啟」用輸入框裡的路徑（可能尚未儲存），不存在就提示；設定視窗變高，改放進 `ScrollViewer`，螢幕矮時捲動。`CHANGELOG.md` 的格式要維持 `##` / `###` / `- `，否則視窗不會顯示該行（`ChangeLogTests` 會檢查最新一筆是 Unreleased 或目前版本）。
+**Author**: 使用者要求，Claude 決定細節

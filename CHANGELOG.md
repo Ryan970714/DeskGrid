@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Settings: **Open** next to the root folder, a **Taskbar** card with **Pin all folders to taskbar…**, the GitHub
+  address, and a **Change log…** window that lists what changed in each version (built into the exe).
+
+### Changed
+
+- **Open root folder** and **Pin all folders to taskbar…** moved from the tray menu to Settings. The tray menu keeps
+  New folder, Settings, Start with Windows and Exit.
+- The settings window scrolls if the screen is too short for all of it.
+
 ## 0.3.1
 
 ### Added

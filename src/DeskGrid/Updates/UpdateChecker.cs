@@ -16,6 +16,9 @@ internal sealed record ReleaseInfo(Version Version, string Tag, string PageUrl, 
 /// <summary>Finds out whether GitHub has a newer release than the running version.</summary>
 internal static class UpdateChecker
 {
+    /// <summary>The project's home on GitHub.</summary>
+    public const string RepositoryUrl = "https://github.com/Ryan970714/DeskGrid";
+
     private const string LatestReleaseUrl = "https://api.github.com/repos/Ryan970714/DeskGrid/releases/latest";
     private const string ExeSuffix = "-win-x64.exe";
 

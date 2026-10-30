@@ -18,11 +18,13 @@ internal static class ShellItem
     /// </summary>
     public static void Open(string path)
     {
+        // A web address has no folder to start in.
+        var folder = Path.GetDirectoryName(path);
         var startInfo = new ProcessStartInfo(path)
         {
             UseShellExecute = true,
             ErrorDialog = true,
-            WorkingDirectory = Path.GetDirectoryName(path),
+            WorkingDirectory = Directory.Exists(folder) ? folder : null,
         };
 
         try

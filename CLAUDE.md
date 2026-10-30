@@ -46,11 +46,11 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 | IconService | `Icons/` | IShellItemImageFactory 取 256px 圖示；依排序取前 4 個合成 2×2 預覽；快取，資料夾變動才重建 |
 | FolderWidget | `Widgets/` | 桌面上的資料夾圖示 + 名稱，可拖動並存位置（`FolderWidget` 視圖、`WidgetBoard` 同步與擺放、`WidgetGrid` 格線） |
 | PopupPanel | `Panel/` | 格子面板（預設 3 欄，超過可捲動，不分頁）；點項目用 ShellExecute 啟動；點外部 / Esc / 失焦收合 |
-| TrayApp | `Tray/`、`Settings/` | 系統匣選單：新增資料夾、開啟根目錄、設定、開機自啟開關、結束（`TrayIcon`、`AutoStart`；設定視窗與新增資料夾對話框在 `Settings/`） |
+| TrayApp | `Tray/`、`Settings/` | 系統匣選單：新增資料夾、設定、開機自啟開關、結束（`TrayIcon`、`AutoStart`；設定視窗、更新紀錄視窗與新增資料夾對話框在 `Settings/`）。「開啟根目錄」「釘選所有資料夾到工作列」「GitHub 網址」「更新紀錄」在設定視窗裡（2026-10-30） |
 | 拖放加入 | `Folders/ItemImporter` | 拖到 widget 的檔案依規則建捷徑 / 移動 / 複製 |
 | 刪除資料夾 | `Folders/FolderDeleter`、`Shell/RecycleBin` | widget 右鍵刪除：資料夾進資源回收筒，內容依設定先移到桌面或一併刪除 |
 | 疊圖示建資料夾 | `Widgets/IconMerger`、`Folders/DesktopFiles` | 桌面圖示拖到另一個圖示上 → 新資料夾（拖曳期間以一個透明接收區接手 Explorer 的放開） |
-| 工作列釘選 | `Taskbar/` | widget 右鍵「釘選到工作列」：建 `--open "資料夾"` 捷徑讓使用者自己釘；系統匣「把所有資料夾釘選到工作列」建 `--all` 捷徑（面板列出所有資料夾）；點下去由命名管線（`InstanceChannel`）通知執行中的 DeskGrid 在游標處開面板；捷徑各帶 AppUserModelID，工作列才不會合併 |
+| 工作列釘選 | `Taskbar/` | widget 右鍵「釘選到工作列」：建 `--open "資料夾"` 捷徑讓使用者自己釘；設定視窗「工作列」卡片的「把所有資料夾釘選到工作列…」建 `--all` 捷徑（面板列出所有資料夾）；點下去由命名管線（`InstanceChannel`）通知執行中的 DeskGrid 在游標處開面板；捷徑各帶 AppUserModelID，工作列才不會合併 |
 | 版本檢查 | `Updates/` | 啟動後 8 秒與設定視窗的「檢查更新」按鈕：查 GitHub 最新 release，有新版本彈出「更新 / 維持 / 取消」；更新 = 下載 exe、驗 SHA256、由 PowerShell 小腳本在程式結束後換檔並重啟 |
 | （輔助）Shell | `Shell/` | Shell 互通：`ShellImage`（圖示）、`ShellItem`（ShellExecute 開啟、顯示名稱）、`ShortcutFile`（建 .lnk）、`ShellContextMenu`（Explorer 對檔案的右鍵選單）、`RecycleBin` |
 | （輔助）Log | `Diagnostics/` | 簡易 append-only log |
@@ -131,7 +131,7 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
   - **開機流程**（2026-10-30）：帶 `--autostart` 的啟動會先 `DesktopHost.WaitUntilSettledAsync`（`DesktopReadiness`，每 0.5 秒在背景執行緒讀桌面圖示位置，連兩次相同才算好；逾時 45 秒照常往下）再建 widget。使用者自己啟動時桌面一定好了，不等。原因：登入時 list view 已存在但圖示還沒排好，格線沒有錨點 → widget 被吸到退回用的格線並寫回 config，覆蓋真正的位置。`WidgetBoard.Add` 另有防線：讀不到圖示格線（`WidgetGrid.FollowsIcons` 為 false）時，有存位置的 widget 不吸附、不存檔。
   - **第一次執行**：config `autoStartAsked` 為 false 時，widget 出現後問一次「要不要開機啟動」（已啟用的使用者靜默標記）；之後只能從系統匣選單切換。登錄寫入被拒（群組原則）時 `ReportAutoStart` 會跳警告。
 - **單一執行個體**：`Local\DeskGrid.SingleInstance` mutex，第二個直接結束。
-- **設定視窗**：根目錄（`OpenFolderDialog`）、欄數 1–8、桌面捷徑拖入模式、面板背景（自訂色用 comdlg32 `ChooseColor`）。非模態、確定 / 取消；**非模態視窗的 `IsCancel` 不會自動關窗**，要自己 `Close()`。根目錄變更 → 重建 catalog 與 widget；其他設定 → 存檔、關閉已開面板。
+- **設定視窗**：根目錄（`OpenFolderDialog`；旁邊「開啟」用框裡的路徑在 Explorer 開，資料夾不存在就提示）、欄數 1–8、桌面捷徑拖入模式、刪除模式、面板背景（自訂色用 comdlg32 `ChooseColor`）、「工作列」卡片（`PinAllFolders` 回呼 → `App.PinAllFoldersToTaskbar`）、版本 / 檢查更新、GitHub 網址（`UpdateChecker.RepositoryUrl`）與「更新紀錄…」（`ChangeLogWindow`，內容是編進 exe 的 `CHANGELOG.md`，csproj `<EmbeddedResource LogicalName="CHANGELOG.md">`，`ChangeLog.Parse` 只認 `##` / `###` / `- `；只有英文）。卡片放在 `ScrollViewer`，視窗 `MaxHeight` = 工作區高度，螢幕太矮時捲動、確定 / 取消固定在下方。非模態、確定 / 取消；**非模態視窗的 `IsCancel` 不會自動關窗**，要自己 `Close()`。根目錄變更 → 重建 catalog 與 widget；其他設定 → 存檔、關閉已開面板。
 - **Fluent 視窗**（設定、新增資料夾、更新）：`ThemeMode="System"`；卡片樣式 `Card` / `CardTitle` 在 `App.xaml`；`FluentWindow.UseOpaqueBackground` 關掉 Mica 改不透明底色，文字才能用 ClearType。
 - **XAML 不可引用本組件型別**（例如 `x:Static` 到 `Strings`）：`Strings` 在 build 時才產生在 `obj/`，WPF 的暫時標記組件編譯不到。介面文字在 code-behind 設定。
 - **App 圖示**：`tools/make-icon.ps1` 產生 `src/DeskGrid/Assets/DeskGrid.ico`（多尺寸 PNG ICO）。

@@ -17,7 +17,8 @@ Every folder is a real folder on disk, so whatever you change there shows up on 
 - Right-click a folder to make a new one, delete it (to the Recycle Bin) or pin it to the taskbar
 - Right-click an item in an open folder for the menu Explorer shows for it: Open, Send to, Cut, Copy, Delete,
   Properties and whatever your apps add
-- Tray menu: new folder, open the root folder, pin all folders to the taskbar, settings, start with Windows, exit
+- Tray menu: new folder, settings, start with Windows, exit. Settings also has the taskbar button for all folders, a
+  button that opens the root folder, the GitHub address and the change log
 - Panel background: Windows 11 acrylic following the light/dark theme, dark, light, or your own color
 - Folder names stay readable over a light wallpaper
 - Checks GitHub for new versions and can update itself
@@ -80,7 +81,7 @@ desktop folder**; the files inside are its items.
 | Add items | Drag them onto the folder (see below), or put files into the subfolder |
 | Reorder items | Drag an item to another place in the open panel; the others slide out of the way |
 | Take items out | Drag an item out of the panel onto the desktop, or onto another folder (hold it over a folder for a moment to open it and drop inside) |
-| Pin to the taskbar | Right-click a folder → **Pin to taskbar…**, then drag the shortcut that appears onto the taskbar (Windows only lets you do the pinning). Tray menu → **Pin all folders to taskbar…** pins one button that lists every folder |
+| Pin to the taskbar | Right-click a folder → **Pin to taskbar…**, then drag the shortcut that appears onto the taskbar (Windows only lets you do the pinning). **Settings** → **Taskbar** → **Pin all folders to taskbar…** pins one button that lists every folder |
 
 ### Making a folder from two icons
 
@@ -109,15 +110,18 @@ Items keep the order they were added in; new items go last, or where you drop th
 
 Tray menu → **Settings…**:
 
-- **Root folder**: where the folders live. It can't be on the desktop (its folders would show up twice).
+- **Root folder**: where the folders live. It can't be on the desktop (its folders would show up twice). **Open** shows it in Explorer.
 - **Panel columns** (1–8).
 - **Desktop shortcuts dropped on a folder**: moved off the desktop, or copied.
 - **When a folder is deleted, the items inside it**: moved to the desktop (the default), or deleted along with it.
   If an item can't be moved, the folder is kept.
 - **Panel background**.
+- **Taskbar**: **Pin all folders to taskbar…** makes the shortcut for one taskbar button that lists every folder; drag it
+  onto the taskbar yourself (Windows only lets you do the pinning).
 - **Check for updates**: DeskGrid also checks a few seconds after it starts. If there is a newer release you can
   update (downloads it, checks its SHA-256, and restarts into the new version), keep the current version (not asked
   about this release again), or cancel (asked again next start).
+- **GitHub**: the address of the project. **Change log…** lists what changed in each version.
 
 ### Files
 

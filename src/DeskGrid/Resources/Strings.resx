@@ -91,9 +91,6 @@
   <data name="TrayNewFolder" xml:space="preserve">
     <value>New folder…</value>
   </data>
-  <data name="TrayOpenRoot" xml:space="preserve">
-    <value>Open root folder</value>
-  </data>
   <data name="TraySettings" xml:space="preserve">
     <value>Settings…</value>
   </data>
@@ -131,7 +128,7 @@ Using the default root folder instead:
   <data name="PanelBack" xml:space="preserve">
     <value>All folders</value>
   </data>
-  <data name="TrayPinAllFolders" xml:space="preserve">
+  <data name="SettingsPinAll" xml:space="preserve">
     <value>Pin all folders to taskbar…</value>
   </data>
   <data name="RenameFailed" xml:space="preserve">
@@ -241,5 +238,29 @@ Using the default root folder instead:
   </data>
   <data name="AutoStartFailed" xml:space="preserve">
     <value>Windows did not allow changing the start-up entry. A policy on this PC may be blocking it.</value>
+  </data>
+  <data name="SettingsOpen" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="SettingsRootMissing" xml:space="preserve">
+    <value>That folder doesn't exist yet. OK creates it.</value>
+  </data>
+  <data name="SettingsTaskbar" xml:space="preserve">
+    <value>Taskbar</value>
+  </data>
+  <data name="SettingsGitHub" xml:space="preserve">
+    <value>GitHub</value>
+  </data>
+  <data name="SettingsChangeLog" xml:space="preserve">
+    <value>Change log…</value>
+  </data>
+  <data name="ChangeLogTitle" xml:space="preserve">
+    <value>Change log</value>
+  </data>
+  <data name="ChangeLogMissing" xml:space="preserve">
+    <value>This build has no change log.</value>
+  </data>
+  <data name="ButtonClose" xml:space="preserve">
+    <value>Close</value>
   </data>
 </root>

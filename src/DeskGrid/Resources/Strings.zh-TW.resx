@@ -87,9 +87,6 @@
   <data name="TrayNewFolder" xml:space="preserve">
     <value>新增資料夾…</value>
   </data>
-  <data name="TrayOpenRoot" xml:space="preserve">
-    <value>開啟根目錄</value>
-  </data>
   <data name="TraySettings" xml:space="preserve">
     <value>設定…</value>
   </data>
@@ -126,7 +123,7 @@
   <data name="PanelBack" xml:space="preserve">
     <value>所有資料夾</value>
   </data>
-  <data name="TrayPinAllFolders" xml:space="preserve">
+  <data name="SettingsPinAll" xml:space="preserve">
     <value>把所有資料夾釘選到工作列…</value>
   </data>
   <data name="RenameFailed" xml:space="preserve">
@@ -230,5 +227,29 @@
   </data>
   <data name="AutoStartFailed" xml:space="preserve">
     <value>Windows 不允許變更開機啟動項目，這台電腦的原則可能擋住了它。</value>
+  </data>
+  <data name="SettingsOpen" xml:space="preserve">
+    <value>開啟</value>
+  </data>
+  <data name="SettingsRootMissing" xml:space="preserve">
+    <value>這個資料夾還不存在，按「確定」會建立它。</value>
+  </data>
+  <data name="SettingsTaskbar" xml:space="preserve">
+    <value>工作列</value>
+  </data>
+  <data name="SettingsGitHub" xml:space="preserve">
+    <value>GitHub</value>
+  </data>
+  <data name="SettingsChangeLog" xml:space="preserve">
+    <value>更新紀錄…</value>
+  </data>
+  <data name="ChangeLogTitle" xml:space="preserve">
+    <value>更新紀錄</value>
+  </data>
+  <data name="ChangeLogMissing" xml:space="preserve">
+    <value>這個版本沒有附更新紀錄。</value>
+  </data>
+  <data name="ButtonClose" xml:space="preserve">
+    <value>關閉</value>
   </data>
 </root>

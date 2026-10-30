@@ -1,9 +1,11 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using DeskGrid.Config;
 using DeskGrid.Folders;
 using DeskGrid.Panel;
 using DeskGrid.Resources;
+using DeskGrid.Shell;
 using DeskGrid.Updates;
 using Microsoft.Win32;
 
@@ -26,6 +28,9 @@ internal partial class SettingsWindow : Window
         LocalizeTexts();
         FluentWindow.UseOpaqueBackground(this);
 
+        // On a small screen the cards scroll instead of the window running off it.
+        MaxHeight = SystemParameters.WorkArea.Height;
+
         RootBox.Text = config.RootPath;
         ColumnsBox.ItemsSource = Enumerable.Range(1, MaxColumns).ToList();
         ColumnsBox.SelectedItem = Math.Clamp(config.PanelColumns, 1, MaxColumns);
@@ -43,6 +48,31 @@ internal partial class SettingsWindow : Window
 
     /// <summary>Checks for a newer release (showing the update dialog if there is one); returns what to tell the user, if anything.</summary>
     public Func<Task<string>>? CheckForUpdates { get; set; }
+
+    /// <summary>Creates the taskbar shortcut that lists all folders and shows it to the user, who pins it.</summary>
+    public Action? PinAllFolders { get; set; }
+
+    private void OnPinAll(object sender, RoutedEventArgs e) => PinAllFolders?.Invoke();
+
+    private void OnOpenRoot(object sender, RoutedEventArgs e)
+    {
+        // What is in the box, which may not be saved yet.
+        var path = RootBox.Text.Trim();
+        if (Directory.Exists(path))
+        {
+            Error.Visibility = Visibility.Collapsed;
+            ShellItem.Open(path);
+        }
+        else
+        {
+            Error.Text = Strings.SettingsRootMissing;
+            Error.Visibility = Visibility.Visible;
+        }
+    }
+
+    private void OnGitHub(object sender, RoutedEventArgs e) => ShellItem.Open(UpdateChecker.RepositoryUrl);
+
+    private void OnChangeLog(object sender, RoutedEventArgs e) => new ChangeLogWindow { Owner = this }.ShowDialog();
 
     private async void OnCheckUpdates(object sender, RoutedEventArgs e)
     {
@@ -79,6 +109,14 @@ internal partial class SettingsWindow : Window
         Title = Strings.SettingsTitle;
         RootLabel.Text = Strings.SettingsRootFolder;
         BrowseButton.Content = Strings.SettingsBrowse;
+        OpenRootButton.Content = Strings.SettingsOpen;
+        TaskbarLabel.Text = Strings.SettingsTaskbar;
+        PinAllButton.Content = Strings.SettingsPinAll;
+        GitHubLabel.Text = Strings.SettingsGitHub;
+
+        // Without the scheme: shorter, and it is still plainly the web address.
+        GitHubLink.Inlines.Add(UpdateChecker.RepositoryUrl["https://".Length..]);
+        ChangeLogButton.Content = Strings.SettingsChangeLog;
         ColumnsLabel.Text = Strings.SettingsColumns;
         DropModeLabel.Text = Strings.SettingsDropMode;
         DropMove.Content = Strings.SettingsDropMove;
