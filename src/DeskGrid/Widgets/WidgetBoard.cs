@@ -8,6 +8,7 @@ using DeskGrid.Diagnostics;
 using DeskGrid.Folders;
 using DeskGrid.Icons;
 using DeskGrid.Resources;
+using DeskGrid.Shell;
 
 namespace DeskGrid.Widgets;
 
@@ -212,6 +213,13 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
         UpdateHalos();
     }
 
+    // Whether the pointer is on the desktop's Recycle Bin icon, which is told from the others by the name under it.
+    private bool IsOverRecycleBin() =>
+        host.ReadIconGrid(log: false) is { } grid
+        && grid.IconAt(ScreenPoint.AtCursor()) is { } icon
+        && host.ReadIconNames(grid.Icons.Count) is { } names
+        && string.Equals(names[icon.Index], RecycleBin.DisplayName, StringComparison.CurrentCultureIgnoreCase);
+
     // Looks at the wallpaper behind each name. Skipped where a window covers the widget (the screen would
     // show the window, not the wallpaper); the next tick tries again.
     private void UpdateHalos()
@@ -372,7 +380,22 @@ internal sealed class WidgetBoard(DesktopHost host, ConfigStore configStore, Ico
                 board.WidgetDragStarted?.Invoke(board, EventArgs.Empty);
             };
             View.Dragged += (_, offset) => Surface.MoveTo(_dragOrigin.Offset(offset.X, offset.Y));
-            View.DragCompleted += (_, _) => board.Snap(Surface, position => board.SavePosition(Folder.Name, position));
+            View.DragCompleted += (_, _) =>
+            {
+                // Let go over the Recycle Bin: the widget goes back where it came from, and its folder is offered for
+                // deletion (after this input handler, since that asks).
+                var overRecycleBin = board.IsOverRecycleBin();
+                if (overRecycleBin)
+                {
+                    Surface.MoveTo(_dragOrigin);
+                }
+
+                board.Snap(Surface, position => board.SavePosition(Folder.Name, position));
+                if (overRecycleBin)
+                {
+                    View.Dispatcher.BeginInvoke(() => board.DeleteRequested?.Invoke(board, Folder));
+                }
+            };
             View.DragOver += (_, e) =>
             {
                 e.Effects = board.DropEffect(Folder.FullPath, e);

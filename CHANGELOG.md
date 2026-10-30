@@ -9,6 +9,8 @@
 - **New folder…** in the right-click menu of a folder and of the name bar of an open folder.
 - **Delete folder…** from the name bar of an open folder and from a folder's entry in the all-folders list, so a
   folder can be deleted without going back to the desktop or the root folder.
+- Drag a folder onto the Recycle Bin icon on the desktop to delete it. The folder goes back to where it was and the
+  usual "Delete folder…" question is asked, so nothing is lost by a slip.
 - The first run asks whether DeskGrid should start with Windows. If Windows refuses to change the start-up entry, the
   tray menu now says so.
 

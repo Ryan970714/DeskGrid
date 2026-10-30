@@ -75,7 +75,7 @@ desktop folder**; the files inside are its items.
 | Open a folder | Click it. Click an item to launch it. Esc, clicking elsewhere or clicking the folder again closes it |
 | Move a folder | Drag it; it snaps to the nearest free cell |
 | Rename | Click the folder's name in its panel, or rename the subfolder in Explorer |
-| Delete | Right-click the folder on the desktop, or the name bar of its open panel (or its entry in the all-folders list) → **Delete folder…**. The folder goes to the Recycle Bin; what happens to the items inside is up to Settings. There is no need to open the root folder |
+| Delete | Drag the folder onto the Recycle Bin icon on the desktop, or right-click the folder on the desktop, or the name bar of its open panel (or its entry in the all-folders list) → **Delete folder…**. The folder goes to the Recycle Bin; what happens to the items inside is up to Settings. There is no need to open the root folder |
 | Open, delete, copy… an item | Right-click it in an open panel for Explorer's own menu (hold Shift for the extra commands). Rename is left out: rename the file in Explorer |
 | Add items | Drag them onto the folder (see below), or put files into the subfolder |
 | Reorder items | Drag an item to another place in the open panel; the others slide out of the way |

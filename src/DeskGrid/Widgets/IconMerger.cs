@@ -91,15 +91,6 @@ internal sealed class IconMerger : IDisposable
         return (PInvoke.GetAsyncKeyState(swapped ? RightButton : LeftButton) & 0x8000) != 0;
     }
 
-    private static ScreenPoint Cursor()
-    {
-        PInvoke.GetCursorPos(out var cursor);
-        return new ScreenPoint(cursor.X, cursor.Y);
-    }
-
-    private static bool Contains(ScreenRect rect, ScreenPoint point) =>
-        point.X >= rect.Left && point.X < rect.Right && point.Y >= rect.Top && point.Y < rect.Bottom;
-
     private static bool IsBeyondDragThreshold(ScreenPoint from, ScreenPoint to) =>
         Math.Abs(to.X - from.X) >= PInvoke.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CXDRAG)
         || Math.Abs(to.Y - from.Y) >= PInvoke.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CYDRAG);
@@ -127,8 +118,8 @@ internal sealed class IconMerger : IDisposable
             return;
         }
 
-        var at = Cursor();
-        if (_host.ReadIconGrid(log: false) is not { } grid || grid.Icons.FirstOrDefault(i => Contains(i.Cell, at)) is not { } pressed)
+        var at = ScreenPoint.AtCursor();
+        if (_host.ReadIconGrid(log: false) is not { } grid || grid.IconAt(at) is not { } pressed)
         {
             return; // Not on an icon: a click on the background, or a rubber band.
         }
@@ -141,7 +132,7 @@ internal sealed class IconMerger : IDisposable
     {
         if (PrimaryButtonDown())
         {
-            if (_grid is not null && IsBeyondDragThreshold(_pressedAt, Cursor()))
+            if (_grid is not null && IsBeyondDragThreshold(_pressedAt, ScreenPoint.AtCursor()))
             {
                 BeginDrag(_grid, _pressed!);
             }
@@ -203,8 +194,8 @@ internal sealed class IconMerger : IDisposable
             return;
         }
 
-        var cursor = Cursor();
-        var target = _targets.FirstOrDefault(t => Contains(t.Area, cursor));
+        var cursor = ScreenPoint.AtCursor();
+        var target = _targets.FirstOrDefault(t => t.Area.Contains(cursor));
         if (target == _current)
         {
             return;

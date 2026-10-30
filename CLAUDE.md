@@ -153,6 +153,7 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
   - **位置**：新資料夾的 config 位置先設成被放上圖示的格，再匯入項目，之後 scanner 看到資料夾時 `WidgetBoard.Add` 吸到最近空格（圖示被移走 = 就是那一格；沒移走〔複製模式、非捷徑〕= 旁邊最近的空格）。
   - 回報給來源的效果一律 Copy（同 widget 拖放）；一個項目都沒加進去 → 刪掉剛建的空資料夾、回報 None。
 - **桌面上不再有「新增資料夾」磚**（2026-10-29 使用者要求移除）：新增資料夾走系統匣「新增資料夾…」或疊圖示；原本「把檔案拖到磚上建資料夾」由疊圖示取代，config 的 `addTilePosition` 已移除（舊 config 裡的值載入時被忽略）。
+- **拖 widget 到資源回收筒**（2026-10-30）：`WidgetBoard.Entry` 的 `DragCompleted` 先問 `IsOverRecycleBin`（游標所在的桌面圖示格 `DesktopIconGrid.IconAt`，且圖示下的名稱 = `RecycleBin.DisplayName`，即 `::{645FF040-…}` 的 Shell 顯示名稱，跟顯示語言與改名走）。是 → widget 回到拖曳前的格子，再 `Dispatcher.BeginInvoke` 觸發 `DeleteRequested`（走原本「刪除資料夾…」確認，離開滑鼠事件處理再問）。實機（explorer 啟動的行程）驗證：名稱 `資源回收筒` 與桌面圖示一致、游標在圖示上才命中；沒有實際拖放（電腦使用權限不能拖）。**注意**：從 Claude 桌面 App 的 PowerShell 讀 Shell 名稱會是英文（行程 UI 語言不同），不能拿來比對。
 - **面板開著時拖 widget**：`WidgetBoard.WidgetDragStarted` → `PanelController.Close()`（原本面板留在 widget 的舊位置）。
 - **測試注意**：從 Claude 桌面 App（MSIX）啟動的行程（含 `dotnet test`）**不能把視窗掛到 Explorer 的桌面底下**（`HwndWrapper` 建立失敗，錯誤碼 0），所以 `DesktopSurface` / `IconMerger` 無法寫成單元測試；要驗證桌面行為，只能在真正的 DeskGrid 行程（用 `explorer.exe <exe>` 啟動）裡加暫時的探測碼並讀 log。
 

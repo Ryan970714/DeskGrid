@@ -7,6 +7,15 @@ namespace DeskGrid.Shell;
 /// <summary>Deleting the way Explorer does: into the Recycle Bin, so it can be undone.</summary>
 internal static class RecycleBin
 {
+    // The Recycle Bin's own shell item, wherever it is shown.
+    private const string ParsingName = "::{645FF040-5081-101B-9F08-00AA002F954E}";
+
+    /// <summary>
+    /// The name Explorer shows under the Recycle Bin's desktop icon: it follows the display language and a rename,
+    /// so it is the way to tell that icon from the others.
+    /// </summary>
+    public static string DisplayName => ShellItem.GetDisplayName(ParsingName);
+
     /// <summary>
     /// Sends a file or folder to the Recycle Bin, without progress or confirmation windows. If it can't be recycled
     /// (a network drive, or too big), the shell asks before deleting it for good.

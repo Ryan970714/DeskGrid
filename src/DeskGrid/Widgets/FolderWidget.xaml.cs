@@ -127,7 +127,7 @@ internal partial class FolderWidget : UserControl
 
     protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
     {
-        _pressPoint = CursorPosition();
+        _pressPoint = ScreenPoint.AtCursor();
         CaptureMouse();
         e.Handled = true;
     }
@@ -139,7 +139,7 @@ internal partial class FolderWidget : UserControl
             return;
         }
 
-        var cursor = CursorPosition();
+        var cursor = ScreenPoint.AtCursor();
         var offset = new ScreenPoint(cursor.X - _pressPoint.X, cursor.Y - _pressPoint.Y);
         if (!_dragging && IsBeyondDragThreshold(offset))
         {
@@ -175,12 +175,6 @@ internal partial class FolderWidget : UserControl
             _dragging = false;
             DragCompleted?.Invoke(this, EventArgs.Empty);
         }
-    }
-
-    private static ScreenPoint CursorPosition()
-    {
-        PInvoke.GetCursorPos(out var point);
-        return new ScreenPoint(point.X, point.Y);
     }
 
     private static bool IsBeyondDragThreshold(ScreenPoint offset) =>

@@ -84,6 +84,9 @@ internal sealed record DesktopIconGrid(int CellWidth, int CellHeight, ScreenPoin
         return new DesktopIconGrid(cellWidth, cellHeight, anchor, icons, autoArranged);
     }
 
+    /// <summary>The icon whose cell <paramref name="point"/> is in, or <see langword="null"/>.</summary>
+    public DesktopIcon? IconAt(ScreenPoint point) => Icons.FirstOrDefault(icon => icon.Cell.Contains(point));
+
     /// <summary>Moves <paramref name="icon"/> so its cell's top-left corner is at <paramref name="cell"/>.</summary>
     public static bool Move(IconLayer layer, DesktopIcon icon, ScreenPoint cell)
     {
