@@ -717,7 +717,6 @@ internal partial class PopupPanel : Window
 
     private void OnBackClick(object sender, MouseButtonEventArgs e)
     {
-        // Not a click on the heading, which would start renaming.
         e.Handled = true;
         if (_list is { } list)
         {

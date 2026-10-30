@@ -68,15 +68,16 @@
       <!-- The folder's name; hovering shows a pencil, clicking turns it into a box to rename the folder.
            A folder opened from the list of all folders has an arrow back to the list. -->
       <Grid x:Name="HeadingBar" Margin="0,0,0,8" Background="Transparent"
-            MouseEnter="OnHeadingEnter" MouseLeave="OnHeadingLeave" MouseLeftButtonUp="OnHeadingClick"
             MouseRightButtonUp="OnHeadingRightClick">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="24" />
           <ColumnDefinition Width="*" />
           <ColumnDefinition Width="24" />
         </Grid.ColumnDefinitions>
+        <!-- The negative margin grows the target into the panel's padding without moving the heading. -->
         <Border x:Name="BackButton"
                 Grid.Column="0"
+                Margin="-8,-7,0,-7"
                 Visibility="Collapsed"
                 CornerRadius="4"
                 Background="Transparent"
@@ -90,12 +91,27 @@
                      HorizontalAlignment="Center"
                      VerticalAlignment="Center" />
         </Border>
+        <!-- Renaming starts only from the name itself (as wide as its text) or the pencil at the far right. -->
         <TextBlock x:Name="Heading"
                    Grid.Column="1"
+                   HorizontalAlignment="Center"
+                   Background="Transparent"
                    FontSize="16"
                    FontWeight="SemiBold"
                    TextAlignment="Center"
-                   TextTrimming="CharacterEllipsis" />
+                   TextTrimming="CharacterEllipsis"
+                   MouseEnter="OnHeadingEnter" MouseLeave="OnHeadingLeave" MouseLeftButtonUp="OnHeadingClick" />
+        <TextBlock x:Name="EditGlyph"
+                   Grid.Column="2"
+                   Opacity="0"
+                   Background="Transparent"
+                   Padding="6,4,0,4"
+                   FontFamily="Segoe MDL2 Assets"
+                   FontSize="13"
+                   Text="&#xE70F;"
+                   HorizontalAlignment="Right"
+                   VerticalAlignment="Center"
+                   MouseEnter="OnHeadingEnter" MouseLeave="OnHeadingLeave" MouseLeftButtonUp="OnHeadingClick" />
         <TextBox x:Name="HeadingEditor"
                  Grid.Column="0"
                  Grid.ColumnSpan="3"
@@ -111,15 +127,6 @@
                  BorderBrush="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Window}}"
                  PreviewKeyDown="OnEditorKeyDown"
                  LostKeyboardFocus="OnEditorLostFocus" />
-        <TextBlock x:Name="EditGlyph"
-                   Grid.Column="2"
-                   Opacity="0"
-                   FontFamily="Segoe MDL2 Assets"
-                   FontSize="13"
-                   Text="&#xE70F;"
-                   HorizontalAlignment="Right"
-                   VerticalAlignment="Center"
-                   IsHitTestVisible="False" />
       </Grid>
       <TextBlock x:Name="EmptyHint" Margin="0,8" Opacity="0.7" TextAlignment="Center" />
       <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
