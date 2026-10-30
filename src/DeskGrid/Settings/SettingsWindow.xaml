@@ -88,7 +88,7 @@
           </DockPanel>
         </Border>
 
-        <!-- Version and update check on the first row, GitHub and the change log on the second; the buttons share a column. -->
+        <!-- Version and update check on the first row, the startup check on the second, GitHub and the change log on the third; the buttons share a column. -->
         <Border Style="{StaticResource Card}">
           <Grid>
             <Grid.ColumnDefinitions>
@@ -96,6 +96,7 @@
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
               <RowDefinition Height="Auto" />
               <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
@@ -107,11 +108,13 @@
             </StackPanel>
             <Button Grid.Row="0" Grid.Column="1" MinWidth="84" Padding="12,5" x:Name="CheckUpdatesButton" Click="OnCheckUpdates" />
 
-            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,10,0,0" Orientation="Horizontal" VerticalAlignment="Center">
+            <CheckBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,10,0,0" MinWidth="0" x:Name="CheckAtStartupBox" />
+
+            <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,10,0,0" Orientation="Horizontal" VerticalAlignment="Center">
               <TextBlock x:Name="GitHubLabel" FontWeight="SemiBold" />
               <TextBlock Margin="8,0,0,0"><Hyperlink x:Name="GitHubLink" Click="OnGitHub" /></TextBlock>
             </StackPanel>
-            <Button Grid.Row="1" Grid.Column="1" Margin="0,10,0,0" MinWidth="84" Padding="12,5" x:Name="ChangeLogButton" Click="OnChangeLog" />
+            <Button Grid.Row="2" Grid.Column="1" Margin="0,10,0,0" MinWidth="84" Padding="12,5" x:Name="ChangeLogButton" Click="OnChangeLog" />
           </Grid>
         </Border>
       </StackPanel>

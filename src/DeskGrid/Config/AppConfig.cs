@@ -25,6 +25,9 @@ internal sealed class AppConfig
 
     public PanelBackground PanelBackground { get; set; } = new();
 
+    /// <summary>Whether DeskGrid asks GitHub for a newer release a few seconds after it starts. The only network use that isn't the user's own request.</summary>
+    public bool CheckForUpdatesAtStartup { get; set; } = true;
+
     /// <summary>The release the user chose to keep the current version over ("Keep"); not asked about again unless a newer one appears.</summary>
     public string? SkippedUpdateVersion { get; set; }
 

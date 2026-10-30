@@ -177,6 +177,9 @@
   <data name="SettingsCheckUpdates" xml:space="preserve">
     <value>檢查更新</value>
   </data>
+  <data name="SettingsCheckAtStartup" xml:space="preserve">
+    <value>DeskGrid 啟動時檢查更新</value>
+  </data>
   <data name="SettingsChecking" xml:space="preserve">
     <value>檢查中…</value>
   </data>

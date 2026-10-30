@@ -13,7 +13,12 @@ namespace DeskGrid.Settings;
 
 /// <summary>What the user chose in <see cref="SettingsWindow"/>.</summary>
 internal sealed record SettingsChoice(
-    string RootPath, int PanelColumns, DropMode DropMode, DeleteMode DeleteMode, PanelBackground PanelBackground);
+    string RootPath,
+    int PanelColumns,
+    DropMode DropMode,
+    DeleteMode DeleteMode,
+    PanelBackground PanelBackground,
+    bool CheckForUpdatesAtStartup);
 
 /// <summary>Edits a copy of the settings; <see cref="Applied"/> fires on OK with a validated choice.</summary>
 internal partial class SettingsWindow : Window
@@ -42,6 +47,7 @@ internal partial class SettingsWindow : Window
         _customColor = PanelTheme.ParseColor(background.CustomColor) ?? PanelTheme.ParseColor(new PanelBackground().CustomColor)!.Value;
         ColorSwatch.Background = new SolidColorBrush(_customColor);
         OpacitySlider.Value = Math.Clamp(background.CustomOpacity, OpacitySlider.Minimum, OpacitySlider.Maximum);
+        CheckAtStartupBox.IsChecked = config.CheckForUpdatesAtStartup;
     }
 
     public event EventHandler<SettingsChoice>? Applied;
@@ -134,6 +140,7 @@ internal partial class SettingsWindow : Window
         VersionLabel.Text = Strings.SettingsVersion;
         VersionText.Text = UpdateChecker.CurrentVersion.ToString(3);
         CheckUpdatesButton.Content = Strings.SettingsCheckUpdates;
+        CheckAtStartupBox.Content = Strings.SettingsCheckAtStartup;
         OkButton.Content = Strings.ButtonOk;
         CancelButton.Content = Strings.ButtonCancel;
     }
@@ -179,7 +186,8 @@ internal partial class SettingsWindow : Window
             (int)ColumnsBox.SelectedItem,
             DropCopy.IsChecked == true ? DropMode.Copy : DropMode.Move,
             DeleteItems.IsChecked == true ? DeleteMode.DeleteItems : DeleteMode.MoveToDesktop,
-            background));
+            background,
+            CheckAtStartupBox.IsChecked == true));
         Close();
     }
 }

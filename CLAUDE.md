@@ -41,7 +41,7 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 | 模組 | 資料夾 | 職責 |
 |---|---|---|
 | DesktopHost | `Desktop/` | 把 widget 視窗掛在桌面圖示層（所有一般視窗後方）；相容舊版與 Win11 24H2+ 桌面階層；Explorer 重啟後自動重新掛載 |
-| ConfigStore | `Config/` | `%APPDATA%\DeskGrid\config.json`，只存 widget 位置、面板欄數、項目排序、根目錄路徑、拖入模式，以及面板背景（2026-10-24 使用者同意新增）、刪除資料夾時項目的處理方式（`deleteMode`）、是否問過開機自啟（`autoStartAsked`，2026-10-30） |
+| ConfigStore | `Config/` | `%APPDATA%\DeskGrid\config.json`，只存 widget 位置、面板欄數、項目排序、根目錄路徑、拖入模式，以及面板背景（2026-10-24 使用者同意新增）、刪除資料夾時項目的處理方式（`deleteMode`）、是否問過開機自啟（`autoStartAsked`，2026-10-30）、啟動時是否檢查更新（`checkForUpdatesAtStartup`，預設開，2026-10-30） |
 | FolderScanner | `Folders/` | 根目錄預設 `%USERPROFILE%\DeskGrid\`，每個子資料夾 = 一個 widget；FileSystemWatcher 監聽 Created/Deleted/Renamed/Changed，300ms debounce；Renamed 要轉移 config 中的位置與排序；根目錄位於使用者桌面時拒絕並提示 |
 | IconService | `Icons/` | IShellItemImageFactory 取 256px 圖示；依排序取前 4 個合成 2×2 預覽；快取，資料夾變動才重建 |
 | FolderWidget | `Widgets/` | 桌面上的資料夾圖示 + 名稱，可拖動並存位置（`FolderWidget` 視圖、`WidgetBoard` 同步與擺放、`WidgetGrid` 格線） |
@@ -131,7 +131,7 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
   - **開機流程**（2026-10-30）：帶 `--autostart` 的啟動會先 `DesktopHost.WaitUntilSettledAsync`（`DesktopReadiness`，每 0.5 秒在背景執行緒讀桌面圖示位置，連兩次相同才算好；逾時 45 秒照常往下）再建 widget。使用者自己啟動時桌面一定好了，不等。原因：登入時 list view 已存在但圖示還沒排好，格線沒有錨點 → widget 被吸到退回用的格線並寫回 config，覆蓋真正的位置。`WidgetBoard.Add` 另有防線：讀不到圖示格線（`WidgetGrid.FollowsIcons` 為 false）時，有存位置的 widget 不吸附、不存檔。
   - **第一次執行**：config `autoStartAsked` 為 false 時，widget 出現後問一次「要不要開機啟動」（已啟用的使用者靜默標記）；之後只能從系統匣選單切換。登錄寫入被拒（群組原則）時 `ReportAutoStart` 會跳警告。
 - **單一執行個體**：`Local\DeskGrid.SingleInstance` mutex，第二個直接結束。
-- **設定視窗**：根目錄（`OpenFolderDialog`；旁邊「開啟」用框裡的路徑在 Explorer 開，資料夾不存在就提示）、欄數 1–8、桌面捷徑拖入模式、刪除模式、面板背景（自訂色用 comdlg32 `ChooseColor`）、「工作列」卡片（`PinAllFolders` 回呼 → `App.PinAllFoldersToTaskbar`）、版本 / 檢查更新、GitHub 網址（`UpdateChecker.RepositoryUrl`）與「更新紀錄…」（`ChangeLogWindow`，內容是編進 exe 的 `CHANGELOG.md`，csproj `<EmbeddedResource LogicalName="CHANGELOG.md">`，`ChangeLog.Parse` 只認 `##` / `###` / `- `；只有英文）。卡片放在 `ScrollViewer`，視窗 `MaxHeight` = 工作區高度，螢幕太矮時捲動、確定 / 取消固定在下方。非模態、確定 / 取消；**非模態視窗的 `IsCancel` 不會自動關窗**，要自己 `Close()`。根目錄變更 → 重建 catalog 與 widget；其他設定 → 存檔、關閉已開面板。
+- **設定視窗**：根目錄（`OpenFolderDialog`；旁邊「開啟」用框裡的路徑在 Explorer 開，資料夾不存在就提示）、欄數 1–8、桌面捷徑拖入模式、刪除模式、面板背景（自訂色用 comdlg32 `ChooseColor`）、「工作列」卡片（`PinAllFolders` 回呼 → `App.PinAllFoldersToTaskbar`）、版本 / 檢查更新（含「啟動時檢查更新」勾選）、GitHub 網址（`UpdateChecker.RepositoryUrl`）與「更新紀錄…」（`ChangeLogWindow`，內容是編進 exe 的 `CHANGELOG.md`，csproj `<EmbeddedResource LogicalName="CHANGELOG.md">`，`ChangeLog.Parse` 只認 `##` / `###` / `- `；只有英文）。卡片放在 `ScrollViewer`，視窗 `MaxHeight` = 工作區高度，螢幕太矮時捲動、確定 / 取消固定在下方。非模態、確定 / 取消；**非模態視窗的 `IsCancel` 不會自動關窗**，要自己 `Close()`。根目錄變更 → 重建 catalog 與 widget；其他設定 → 存檔、關閉已開面板。
 - **Fluent 視窗**（設定、新增資料夾、更新）：`ThemeMode="System"`；卡片樣式 `Card` / `CardTitle` 在 `App.xaml`；`FluentWindow.UseOpaqueBackground` 關掉 Mica 改不透明底色，文字才能用 ClearType。
 - **XAML 不可引用本組件型別**（例如 `x:Static` 到 `Strings`）：`Strings` 在 build 時才產生在 `obj/`，WPF 的暫時標記組件編譯不到。介面文字在 code-behind 設定。
 - **App 圖示**：`tools/make-icon.ps1` 產生 `src/DeskGrid/Assets/DeskGrid.ico`（多尺寸 PNG ICO）。
@@ -141,6 +141,7 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 - **來源**：`https://api.github.com/repos/Ryan970714/DeskGrid/releases/latest`（匿名，每小時 60 次上限夠用）；略過 draft / prerelease；tag 去掉 `v` 後與組件版本（csproj `<Version>`）比 major.minor.build。exe 資產用字尾 `-win-x64.exe` 找（舊 v0.1.0 資產叫 `DeskFolders-…`），校驗檔是 `<exe 名>.sha256`。
 - **三個選項**：更新（下載 → 驗 SHA256（取自 release 資產的 API `digest` 欄位）→ `apply-update.ps1` 等本程序結束後 `Move-Item` 蓋掉 exe 再啟動；只有發布的單檔 exe 做得到，`UpdateInstaller.CanReplaceSelf`，開發版與無法寫入的資料夾改開 release 頁）、維持（config `skippedUpdateVersion` 記下該 tag，自動檢查不再提醒，手動檢查仍會彈）、取消（什麼都不存，下次啟動再提醒）。
 - **觸發**：啟動後 8 秒自動檢查一次（網路失敗只記 log，不打擾）；設定視窗顯示目前版本與「檢查更新」按鈕，結果文字顯示在按鈕旁。
+- **可關閉**（2026-10-30，SignPath Foundation 條款要求連網行為要揭露且能關）：設定視窗「DeskGrid 啟動時檢查更新」（config `checkForUpdatesAtStartup`，預設開）。關掉後 DeskGrid 不會自己連網，只有使用者按「檢查更新」或選「更新」才連 GitHub。README 的「隱私 / Privacy」列出所有網路行為，新增網路行為時要同步改。
 
 ## 刪除資料夾與疊圖示建資料夾（階段 8）
 
@@ -164,6 +165,7 @@ Windows 10 (22H2) / 11 桌面上的「手機式資料夾」：資料夾圖示顯
 - **CI**（`.github/workflows/ci.yml`）：push 到 main 與 PR → windows-latest、.NET 10.0.x → build、test、publish，exe 上傳為 artifact。
 - **Release**（`release.yml`）：推 `v*` tag → test → 以 tag 版本號 publish → `gh release create`，只附 `DeskGrid-<版本>-win-x64.exe`。csproj 的 `<Version>` 是本機建置的預設值。
 - **未簽章**：README 說明 SmartScreen「其他資訊 → 仍要執行」與 SHA256 驗證。
+- **程式碼簽章準備**（SignPath Foundation，2026-10-30；**尚未申請**，表單與帳號由使用者自己填）：條款見 <https://signpath.org/terms>（草稿，申請前再讀一次）。repo 端已備妥：README（en / zh-TW）的「Privacy / 隱私」與「Code signing policy / 程式碼簽章政策」（目前寫「尚未簽章、打算申請」，核准後要把聲明改成正式生效、並把同一段放上 Release 頁）；csproj `IncludeSourceRevisionInInformationalVersion=false`（產品版本不帶 `+commit`，條款要求產品名稱 / 版本固定，`AssemblyMetadataTests` 守著）；自動檢查更新可關。**核准後**才做：SignPath 建 project、加 GitHub.com trusted build system、artifact configuration（`zip-file` 內含 exe，並強制 product name / version）、signing policy（手動核准）、API token 存 GitHub secret `SIGNPATH_API_TOKEN`；`release.yml` 改成 `actions/upload-artifact` → `signpath/github-action-submit-signing-request`（`wait-for-completion`）→ `gh release create` 附簽好的 exe；Release 說明要放「Code signing policy」連結。簽章後要在開著 Smart App Control 的機器實測，因為沒有來源明確保證 SignPath 憑證一定被 SAC 放行。
 - 推送 `.github/workflows/` 需要 gh token 的 `workflow` 權限（`gh auth refresh -h github.com -s workflow`）。
 
 # 行為規則（必須遵守）

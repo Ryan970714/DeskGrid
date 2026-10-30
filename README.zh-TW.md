@@ -37,7 +37,8 @@ Windows 10 22H2 或 Windows 11，64 位元。不需安裝 .NET：下載的是自
 
 這個 exe 沒有程式碼簽章（簽章憑證需要付費），所以在足夠多人執行過之前，Microsoft Defender
 SmartScreen 會跳出警告。要繼續執行，請按 **其他資訊** → **仍要執行**。
-若檔案被封鎖，請在檔案上按右鍵 → **內容** → 勾選 **解除封鎖** → **確定**。
+若檔案被封鎖，請在檔案上按右鍵 → **內容** → 勾選 **解除封鎖** → **確定**。我們打算透過 SignPath Foundation
+取得免費的程式碼簽章，見[程式碼簽章政策](#程式碼簽章政策)。
 
 ### 「應用程式控制原則已封鎖此檔案」
 
@@ -113,8 +114,9 @@ Get-FileHash .\DeskGrid-0.3.2-win-x64.exe -Algorithm SHA256
 - **面板背景**。
 - **工作列**：**把所有資料夾釘選到工作列…** 會做出一個捷徑，對應一顆列出所有資料夾的工作列按鈕；請自己把它拖到工作列上
   （Windows 只允許使用者自己釘選）。
-- **檢查更新**：啟動幾秒後也會自動檢查。有新版本時可選擇「更新」（下載、驗證 SHA-256，並以新版本重新啟動）、
+- **檢查更新**：查看有沒有新版本。有新版本時可選擇「更新」（下載、驗證 SHA-256，並以新版本重新啟動）、
   「維持」（不再提醒這個版本）或「取消」（下次啟動再提醒）。
+- **DeskGrid 啟動時檢查更新**：預設開啟；取消勾選後，DeskGrid 不會自己連到 GitHub（見[隱私](#隱私)）。
 - **GitHub**：專案網址。**更新紀錄…** 列出每個版本改了什麼。
 
 ### 檔案位置
@@ -129,6 +131,35 @@ Get-FileHash .\DeskGrid-0.3.2-win-x64.exe -Algorithm SHA256
 
 關閉 **開機時啟動**、從系統匣選單結束，然後刪除 exe。若也要移除設定，再刪除
 `%APPDATA%\DeskGrid` 與 `%LOCALAPPDATA%\DeskGrid`。你的資料夾與其中的檔案不會被動到。
+
+## 隱私
+
+DeskGrid 不蒐集任何資料：沒有遙測、沒有分析、不需要帳號。它存的東西（設定、資料夾位置、log）都留在你的電腦上，
+位置見[檔案位置](#檔案位置)。
+
+它只為了一件事使用網路：到 GitHub 查有沒有新版本。
+
+- 啟動幾秒後，以及你在設定裡按 **檢查更新** 時，會向 `api.github.com` 查詢本專案最新的 Release。GitHub 看得到任何
+  網路請求都會帶的資訊（你的 IP 位址與 `DeskGrid/<版本>` 的 User-Agent），DeskGrid 不會多送其他東西。
+- 若你選擇 **更新**，才會從 GitHub 下載新的 exe，並在取代舊檔前驗證 SHA-256。
+- 在設定裡取消勾選 **DeskGrid 啟動時檢查更新** 後，除非你按 **檢查更新**，DeskGrid 不會建立任何網路連線。
+
+**開機時啟動** 只有在你同意時才會設定（第一次執行時，或從系統匣選單）。它只會在
+`HKCU\Software\Microsoft\Windows\CurrentVersion\Run` 加一筆項目，關閉就移除。其餘的移除方式見[解除安裝](#解除安裝)。
+
+## 程式碼簽章政策
+
+目前的 Release 尚未簽章（見上方「Windows 已保護您的電腦」）。DeskGrid 打算取得
+[SignPath Foundation](https://signpath.org/) 提供的免費程式碼簽章。取得之後，發布的 exe 會被簽章，並適用以下聲明：
+
+> Free code signing provided by [SignPath.io](https://signpath.io/), certificate by
+> [SignPath Foundation](https://signpath.org/).
+
+- **簽章對象**：只有 `DeskGrid-<版本>-win-x64.exe`，由 [Release workflow](.github/workflows/release.yml) 在推送版本 tag
+  時，從本 repo 的原始碼建置。在其他地方建置的檔案一律不簽，也不會修改任何上游的二進位檔。
+- **角色**：作者、審查者與核准者都是唯一的維護者 Ryan Kuo（[@Ryan970714](https://github.com/Ryan970714)）。
+  其他貢獻者的變更會先由維護者審查才合併，每一次簽章請求也由維護者親自核准。
+- **隱私**：見上方[隱私](#隱私)。
 
 ## 已知限制
 

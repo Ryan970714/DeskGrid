@@ -15,6 +15,9 @@
 
     <!-- Release builds override Version from the git tag (see .github/workflows/release.yml). -->
     <Version>0.3.2</Version>
+    <!-- The SDK would append "+<commit>" to the product version, so it differed between builds of one release.
+         Code-signing services (SignPath Foundation) require the product name and version to be fixed. -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Product>DeskGrid</Product>
     <Authors>Ryan Kuo</Authors>
     <Copyright>Copyright (c) 2026 Ryan Kuo</Copyright>

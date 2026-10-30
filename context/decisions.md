@@ -435,3 +435,12 @@
 **Alternatives**: 從 GitHub 抓 release notes（要網路、版本不一定對應）；另寫一份中文更新紀錄（每次發版要多維護一份，沒做，更新紀錄目前只有英文）。
 **Consequences**: 「開啟」用輸入框裡的路徑（可能尚未儲存），不存在就提示；設定視窗變高，改放進 `ScrollViewer`，螢幕矮時捲動。`CHANGELOG.md` 的格式要維持 `##` / `###` / `- `，否則視窗不會顯示該行（`ChangeLogTests` 會檢查最新一筆是 Unreleased 或目前版本）。
 **Author**: 使用者要求，Claude 決定細節
+
+---
+
+### 2026-10-30 — 為 SignPath Foundation 免費程式碼簽章做準備
+**Decision**: repo 端先備妥條款要求的東西，但**不代使用者申請**：(1) 設定新增「DeskGrid 啟動時檢查更新」（config `checkForUpdatesAtStartup`，預設開），關掉後除非使用者手動按才連 GitHub；(2) README（en / zh-TW）新增「Privacy / 隱私」（列出所有網路行為與開機自啟的登錄項）與「Code signing policy / 程式碼簽章政策」（角色、簽章範圍、流程）；(3) csproj `IncludeSourceRevisionInInformationalVersion=false`，產品版本不再帶 `+<commit>`，`AssemblyMetadataTests` 守著產品名稱與版本；(4) 簽章政策目前寫「尚未簽章、打算申請」，不提前宣稱已由 SignPath 簽章。
+**Reason**: 免費簽章的條款（<https://signpath.org/terms>，草稿）要求：連網到外部系統要在隱私政策揭露並提供關閉選項；產品名稱 / 版本固定且被強制檢查；首頁與 Release 頁要有 Code signing policy 與角色名單。DeskGrid 啟動 8 秒後會自動連 GitHub，原本沒有關閉選項，產品版本也帶 commit hash（實測 `0.3.2+007e797…`）。簽章聲明在核准前寫成已簽章會是不實的。申請表單與帳號涉及使用者本人身分，由使用者自己填。
+**Alternatives**: 預設關閉自動檢查（更保守，但使用者不會自動得知新版，沒採用）；首次執行時詢問是否自動檢查（多一個對話框，條款沒要求，沒做）；現在就把簽章聲明寫進 README（核准前不實，否決）；現在就改 `release.yml` 接 SignPath（沒有 organization id / token，無法測，核准後再做）。
+**Consequences**: 一人兼任作者 / 審查者 / 核准者是否被接受，要等審核結果；若被要求第二人審查，要另想辦法。核准後要把 README 的簽章聲明改成生效，並在 Release 說明放 Code signing policy 連結。新增任何網路行為都要同步改 README 的隱私段落。SignPath 憑證能否讓 Smart App Control 放行，沒有來源明確保證，簽章後要實測。
+**Author**: 使用者要求「盡可能修復以符合要求」，Claude 決定細節

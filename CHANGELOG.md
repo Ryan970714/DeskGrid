@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Settings: **Check for updates when DeskGrid starts** (on by default). Untick it and DeskGrid never contacts GitHub
+  on its own; **Check for updates** still works when you press it.
+- The README (English and Traditional Chinese) has a **Privacy** section, which lists everything DeskGrid sends over
+  the network, and a **Code signing policy** section.
+
+### Changed
+
+- The exe's product version is now exactly the release version (`0.3.3`, not `0.3.3+<commit>`), so every build of a
+  release reports the same version, as code-signing services require.
+
 ## 0.3.2
 
 ### Added

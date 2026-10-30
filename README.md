@@ -40,7 +40,8 @@ Windows 10 22H2 or Windows 11, 64-bit. No .NET install needed: the download is a
 
 The exe isn't code-signed (signing certificates cost money), so Microsoft Defender SmartScreen warns
 about it until enough people have run it. To start it anyway, click **More info** → **Run anyway**.
-If the file was blocked, right-click it → **Properties** → check **Unblock** → **OK**.
+If the file was blocked, right-click it → **Properties** → check **Unblock** → **OK**. Free signing through the
+SignPath Foundation is planned; see [Code signing policy](#code-signing-policy).
 
 ### "An Application Control policy has blocked this file"
 
@@ -118,9 +119,11 @@ Tray menu → **Settings…**:
 - **Panel background**.
 - **Taskbar**: **Pin all folders to taskbar…** makes the shortcut for one taskbar button that lists every folder; drag it
   onto the taskbar yourself (Windows only lets you do the pinning).
-- **Check for updates**: DeskGrid also checks a few seconds after it starts. If there is a newer release you can
-  update (downloads it, checks its SHA-256, and restarts into the new version), keep the current version (not asked
-  about this release again), or cancel (asked again next start).
+- **Check for updates**: looks for a newer release. If there is one you can update (downloads it, checks its SHA-256,
+  and restarts into the new version), keep the current version (not asked about this release again), or cancel
+  (asked again next start).
+- **Check for updates when DeskGrid starts**: on by default; untick it and DeskGrid never contacts GitHub on its own
+  (see [Privacy](#privacy)).
 - **GitHub**: the address of the project. **Change log…** lists what changed in each version.
 
 ### Files
@@ -136,6 +139,41 @@ Tray menu → **Settings…**:
 Turn off **Start with Windows**, exit from the tray menu and delete the exe. To remove settings too,
 delete `%APPDATA%\DeskGrid` and `%LOCALAPPDATA%\DeskGrid`. Your folders and their contents are
 never touched.
+
+## Privacy
+
+DeskGrid collects nothing: no telemetry, no analytics, no account. Everything it stores (settings, folder positions,
+the log) stays on your PC, in the files listed under [Files](#files).
+
+It uses the network for one thing, looking for a newer version on GitHub:
+
+- A few seconds after it starts, and whenever you press **Check for updates** in Settings, it asks `api.github.com`
+  for the latest release of this project. GitHub sees what any web request shows (your IP address and a
+  `DeskGrid/<version>` user agent); DeskGrid sends nothing else.
+- If you choose **Update**, it downloads the new exe from GitHub and checks its SHA-256 before replacing the old one.
+- Untick **Check for updates when DeskGrid starts** in Settings and DeskGrid makes no network connection unless you
+  press **Check for updates**.
+
+**Start with Windows** is only set up if you say yes (on first run, or from the tray menu). It adds a single entry
+under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, and turning it off removes it. See [Uninstall](#uninstall)
+for removing everything else.
+
+## Code signing policy
+
+Releases are not code-signed yet (see [Windows protected your PC](#windows-protected-your-pc)). DeskGrid aims to get
+free code signing from the [SignPath Foundation](https://signpath.org/). Once that is in place, the release exe is
+signed and this notice applies:
+
+> Free code signing provided by [SignPath.io](https://signpath.io/), certificate by
+> [SignPath Foundation](https://signpath.org/).
+
+- **What is signed**: only `DeskGrid-<version>-win-x64.exe`, built from the source in this repository by the
+  [Release workflow](.github/workflows/release.yml) when a version tag is pushed. Nothing built elsewhere is signed,
+  and no upstream binaries are modified.
+- **Roles**: Ryan Kuo ([@Ryan970714](https://github.com/Ryan970714)), the sole maintainer, is author, reviewer and
+  approver. Changes from other contributors are reviewed by the maintainer before they are merged, and the maintainer
+  approves every signing request by hand.
+- **Privacy**: see [Privacy](#privacy) above.
 
 ## Known limitations
 

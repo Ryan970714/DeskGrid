@@ -361,10 +361,14 @@ public partial class App : Application
     }
 
     // A few seconds after start, so it doesn't compete with the desktop coming up. Quiet unless there is news.
+    // Skipped, with no network use at all, when the user turned the startup check off in Settings.
     private async Task CheckForUpdatesAtStartupAsync()
     {
         await Task.Delay(StartupUpdateCheckDelay);
-        await CheckForUpdatesAsync(manual: false, owner: null);
+        if (_configStore!.Config.CheckForUpdatesAtStartup)
+        {
+            await CheckForUpdatesAsync(manual: false, owner: null);
+        }
     }
 
     // Asks GitHub for the latest release and, if it is newer than this one, offers the update.
@@ -506,6 +510,7 @@ public partial class App : Application
         config.DropMode = choice.DropMode;
         config.DeleteMode = choice.DeleteMode;
         config.PanelBackground = choice.PanelBackground;
+        config.CheckForUpdatesAtStartup = choice.CheckForUpdatesAtStartup;
         _configStore.Save();
 
         if (rootChanged)
